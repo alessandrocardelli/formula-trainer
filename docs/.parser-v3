@@ -1,0 +1,1 @@
+Parser v3 normalizes MathLive-styled Leibniz differentials such as \\mathrm{dq}/\\mathrm{dt}.
