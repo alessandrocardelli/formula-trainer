@@ -206,7 +206,7 @@ input:focus,
 
 .formula-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
@@ -216,6 +216,7 @@ input:focus,
 }
 
 .formula-card-copy {
+  flex: 1;
   min-width: 0;
 }
 
@@ -229,23 +230,33 @@ input:focus,
   pointer-events: none;
 }
 
-.variable-list {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.75rem;
+.variable-summary-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
 }
 
-.variable-label {
-  margin-right: 0.15rem;
-  color: #94a3b8;
-  font-size: 0.72rem;
+.variable-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.variable-description {
+  min-width: 0;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.variable-unit {
+  color: #64748b;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .variable-chip {
+  flex: none;
   min-width: 1.7rem;
   min-height: 1.7rem;
   padding: 0.2rem 0.48rem;
@@ -253,6 +264,60 @@ input:focus,
   color: #4338ca;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.76rem;
+}
+
+.variable-details {
+  margin-top: 0.9rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+}
+
+.variable-details summary {
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.variable-editor-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.variable-editor-row {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) 5rem;
+  align-items: end;
+  gap: 0.55rem;
+}
+
+.variable-editor-row label {
+  gap: 0.3rem;
+  font-size: 0.72rem;
+}
+
+.variable-editor-row input {
+  min-height: 40px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.variable-editor-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 0.7rem;
+  background: #f8fafc;
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.variable-save-button {
+  justify-self: start;
 }
 
 .delete-button {
@@ -285,6 +350,16 @@ input:focus,
 
 .empty-state span {
   font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .variable-editor-row {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+  }
+
+  .variable-editor-row label:last-child {
+    grid-column: 2;
+  }
 }
 
 @media (min-width: 700px) {

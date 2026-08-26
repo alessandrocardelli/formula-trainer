@@ -15,7 +15,7 @@
 - [x] Parse LaTeX into a symbolic expression
 - [x] Validate equations before saving
 - [x] Detect variables and constants
-- [ ] Store variable metadata and units
+- [x] Store variable metadata and units
 - [ ] Edit existing formulas
 - [ ] Search/filter the formula library
 
