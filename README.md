@@ -27,6 +27,10 @@ The first scaffold is in place. The app currently provides:
 
 All user data is intended to remain local by default. Backup/import can be added without requiring a server.
 
+## Preview deployment
+
+The current development build is configured for deployment to GitHub Pages from the `main` branch using GitHub Actions.
+
 ## Planned stack
 
 - **React + TypeScript** — interface and application logic
