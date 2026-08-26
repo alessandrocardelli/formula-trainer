@@ -1,6 +1,6 @@
 import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
-export const FORMULA_PARSER_VERSION = 4
+export const FORMULA_PARSER_VERSION = 5
 
 let computeEngine: ComputeEngineInstance | undefined
 
@@ -29,23 +29,69 @@ export interface FormulaParseResult {
   error?: string
 }
 
-function normalizeDifferentialVariables(latex: string, variables: string[]) {
-  const compact = latex.replace(/\s+/g, '')
+interface DifferentialPair {
+  numerator: string
+  denominator: string
+}
 
-  // Compute Engine can expose simple Leibniz differentials as composite
-  // symbols such as "dq" and "dt". Do not rely on MathLive's exact LaTeX
-  // serialization here: if an equation contains a fraction and at least two
-  // two-character d-prefixed symbols, treat those tokens as differentials.
-  const differentialSymbols = variables.filter((symbol) => /^d[A-Za-z]$/.test(symbol))
+function directSymbol(node: unknown): string | undefined {
+  if (typeof node === 'string') {
+    return node
+  }
 
-  if (!compact.includes('\\frac') || differentialSymbols.length < 2) {
+  if (node && typeof node === 'object' && !Array.isArray(node)) {
+    const symbol = (node as { sym?: unknown }).sym
+    return typeof symbol === 'string' ? symbol : undefined
+  }
+
+  return undefined
+}
+
+function collectDifferentialPairs(node: unknown, pairs: DifferentialPair[]) {
+  if (Array.isArray(node)) {
+    if (node[0] === 'Divide' && node.length >= 3) {
+      const numerator = directSymbol(node[1])
+      const denominator = directSymbol(node[2])
+
+      if (
+        numerator &&
+        denominator &&
+        /^d[A-Za-z]$/.test(numerator) &&
+        /^d[A-Za-z]$/.test(denominator)
+      ) {
+        pairs.push({ numerator, denominator })
+      }
+    }
+
+    for (const child of node.slice(1)) {
+      collectDifferentialPairs(child, pairs)
+    }
+    return
+  }
+
+  if (node && typeof node === 'object') {
+    const fn = (node as { fn?: unknown }).fn
+    if (Array.isArray(fn)) {
+      collectDifferentialPairs(fn, pairs)
+    }
+  }
+}
+
+function normalizeDifferentialVariables(expressionJson: unknown, variables: string[]) {
+  const pairs: DifferentialPair[] = []
+  collectDifferentialPairs(expressionJson, pairs)
+
+  if (pairs.length === 0) {
     return variables
   }
 
-  const differentialSet = new Set(differentialSymbols)
+  const differentialSymbols = new Set(
+    pairs.flatMap(({ numerator, denominator }) => [numerator, denominator]),
+  )
+
   return [
-    ...variables.filter((symbol) => !differentialSet.has(symbol)),
-    ...differentialSymbols.map((symbol) => symbol.slice(1)),
+    ...variables.filter((symbol) => !differentialSymbols.has(symbol)),
+    ...[...differentialSymbols].map((symbol) => symbol.slice(1)),
   ]
 }
 
@@ -72,7 +118,11 @@ export function parseFormula(latex: string): FormulaParseResult {
     const detectedVariables = [...expression.symbols].filter(
       (symbol) => !ce.box(symbol).isConstant,
     )
-    const normalizedVariables = normalizeDifferentialVariables(cleanLatex, detectedVariables)
+    const expressionJson = expression.json
+    const normalizedVariables = normalizeDifferentialVariables(
+      expressionJson,
+      detectedVariables,
+    )
     const uniqueVariables = [...new Set(normalizedVariables)].sort((a, b) =>
       a.localeCompare(b),
     )
@@ -84,7 +134,7 @@ export function parseFormula(latex: string): FormulaParseResult {
     return {
       ok: true,
       parsed: {
-        expressionJson: expression.json,
+        expressionJson,
         variables: uniqueVariables,
       },
     }
