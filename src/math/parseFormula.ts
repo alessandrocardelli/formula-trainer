@@ -1,6 +1,6 @@
 import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
-export const FORMULA_PARSER_VERSION = 2
+export const FORMULA_PARSER_VERSION = 3
 
 let computeEngine: ComputeEngineInstance | undefined
 
@@ -38,12 +38,11 @@ interface LeibnizDifferential {
 function extractLeibnizDifferential(latex: string): LeibnizDifferential | undefined {
   const compact = latex
     .replace(/\s+/g, '')
-    .replace(/\\mathrm\{d\}/g, 'd')
-    .replace(/\\operatorname\{d\}/g, 'd')
+    // MathLive may serialize either the differential only (\mathrm{d}q)
+    // or the whole token (\mathrm{dq}). Strip common text-style wrappers so
+    // both forms normalize to plain dq/dt before matching.
+    .replace(/\\(?:mathrm|operatorname)\{([^{}]+)\}/g, '$1')
 
-  // MathLive commonly serializes dq/dt as \frac{dq}{dt}. The Compute Engine
-  // can then interpret "dq" and "dt" as whole identifiers, so normalize this
-  // simple Leibniz form before exposing variables to the rest of the app.
   const match = compact.match(/\\frac\{d([A-Za-z])\}\{d([A-Za-z])\}/)
   if (!match) {
     return undefined
