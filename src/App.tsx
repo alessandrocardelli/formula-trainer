@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { db, type FormulaRecord } from './db'
-import { parseFormula } from './math/parseFormula'
+import { FORMULA_PARSER_VERSION, parseFormula } from './math/parseFormula'
 
 type MathFieldElement = HTMLElement & {
   value: string
@@ -21,7 +21,11 @@ export default function App() {
 
     const parsedRecords = await Promise.all(
       records.map(async (record) => {
-        if (record.expressionJson && record.variables) {
+        if (
+          record.expressionJson &&
+          record.variables &&
+          record.parserVersion === FORMULA_PARSER_VERSION
+        ) {
           return record
         }
 
@@ -34,11 +38,13 @@ export default function App() {
           ...record,
           expressionJson: result.parsed.expressionJson,
           variables: result.parsed.variables,
+          parserVersion: FORMULA_PARSER_VERSION,
         }
 
         await db.formulas.update(record.id, {
           expressionJson: result.parsed.expressionJson,
           variables: result.parsed.variables,
+          parserVersion: FORMULA_PARSER_VERSION,
         })
 
         return updated
@@ -79,6 +85,7 @@ export default function App() {
       latex: cleanLatex,
       expressionJson: result.parsed.expressionJson,
       variables: result.parsed.variables,
+      parserVersion: FORMULA_PARSER_VERSION,
       createdAt: now,
       updatedAt: now,
     })
