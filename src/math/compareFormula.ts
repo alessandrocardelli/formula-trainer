@@ -7,6 +7,18 @@ export interface FormulaComparisonResult {
   error?: string
 }
 
+interface EquationOperands {
+  op1: BoxedExpression
+  op2: BoxedExpression
+}
+
+function asEquationOperands(expression: unknown): EquationOperands | null {
+  const candidate = expression as Partial<EquationOperands>
+  return candidate.op1 && candidate.op2
+    ? { op1: candidate.op1, op2: candidate.op2 }
+    : null
+}
+
 function expressionsMatch(a: BoxedExpression, b: BoxedExpression) {
   const mathematicalEquality = a.canonical.isEqual(b.canonical)
   return mathematicalEquality === true || a.canonical.isSame(b.canonical)
@@ -39,13 +51,19 @@ export function compareFormulaAnswer(
       return { ok: false, error: 'The saved formula is not a valid equation.' }
     }
 
+    const expectedSides = asEquationOperands(expected)
+    const answerSides = asEquationOperands(answer)
+    if (!expectedSides || !answerSides) {
+      return { ok: false, error: 'The equation sides could not be read.' }
+    }
+
     const direct =
-      expressionsMatch(expected.op1, answer.op1) &&
-      expressionsMatch(expected.op2, answer.op2)
+      expressionsMatch(expectedSides.op1, answerSides.op1) &&
+      expressionsMatch(expectedSides.op2, answerSides.op2)
 
     const reversed =
-      expressionsMatch(expected.op1, answer.op2) &&
-      expressionsMatch(expected.op2, answer.op1)
+      expressionsMatch(expectedSides.op1, answerSides.op2) &&
+      expressionsMatch(expectedSides.op2, answerSides.op1)
 
     return { ok: true, equivalent: direct || reversed }
   } catch {
