@@ -1,6 +1,6 @@
 import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
-export const FORMULA_PARSER_VERSION = 3
+export const FORMULA_PARSER_VERSION = 4
 
 let computeEngine: ComputeEngineInstance | undefined
 
@@ -29,33 +29,24 @@ export interface FormulaParseResult {
   error?: string
 }
 
-interface LeibnizDifferential {
-  dependent: string
-  independent: string
-  compositeSymbols: string[]
-}
+function normalizeDifferentialVariables(latex: string, variables: string[]) {
+  const compact = latex.replace(/\s+/g, '')
 
-function extractLeibnizDifferential(latex: string): LeibnizDifferential | undefined {
-  const compact = latex
-    .replace(/\s+/g, '')
-    // MathLive may serialize either the differential only (\mathrm{d}q)
-    // or the whole token (\mathrm{dq}). Strip common text-style wrappers so
-    // both forms normalize to plain dq/dt before matching.
-    .replace(/\\(?:mathrm|operatorname)\{([^{}]+)\}/g, '$1')
+  // Compute Engine can expose simple Leibniz differentials as composite
+  // symbols such as "dq" and "dt". Do not rely on MathLive's exact LaTeX
+  // serialization here: if an equation contains a fraction and at least two
+  // two-character d-prefixed symbols, treat those tokens as differentials.
+  const differentialSymbols = variables.filter((symbol) => /^d[A-Za-z]$/.test(symbol))
 
-  const match = compact.match(/\\frac\{d([A-Za-z])\}\{d([A-Za-z])\}/)
-  if (!match) {
-    return undefined
+  if (!compact.includes('\\frac') || differentialSymbols.length < 2) {
+    return variables
   }
 
-  const dependent = match[1]
-  const independent = match[2]
-
-  return {
-    dependent,
-    independent,
-    compositeSymbols: [`d${dependent}`, `d${independent}`, 'd'],
-  }
+  const differentialSet = new Set(differentialSymbols)
+  return [
+    ...variables.filter((symbol) => !differentialSet.has(symbol)),
+    ...differentialSymbols.map((symbol) => symbol.slice(1)),
+  ]
 }
 
 export function parseFormula(latex: string): FormulaParseResult {
@@ -67,10 +58,6 @@ export function parseFormula(latex: string): FormulaParseResult {
 
   try {
     const ce = getComputeEngine()
-
-    // Keep a raw MathJSON tree close to the original notation.
-    // This matters for inputs such as dq/dt, which must not be reduced as
-    // ordinary algebra before we add dedicated derivative normalization.
     const expression = ce.parse(cleanLatex, { form: 'raw' })
     const canonical = expression.canonical
 
@@ -82,16 +69,13 @@ export function parseFormula(latex: string): FormulaParseResult {
       return { ok: false, error: 'Enter a complete equation containing an equals sign.' }
     }
 
-    const leibniz = extractLeibnizDifferential(cleanLatex)
-    const variables = [...expression.symbols]
-      .filter((symbol) => !ce.box(symbol).isConstant)
-      .filter((symbol) => !leibniz?.compositeSymbols.includes(symbol))
-
-    if (leibniz) {
-      variables.push(leibniz.dependent, leibniz.independent)
-    }
-
-    const uniqueVariables = [...new Set(variables)].sort((a, b) => a.localeCompare(b))
+    const detectedVariables = [...expression.symbols].filter(
+      (symbol) => !ce.box(symbol).isConstant,
+    )
+    const normalizedVariables = normalizeDifferentialVariables(cleanLatex, detectedVariables)
+    const uniqueVariables = [...new Set(normalizedVariables)].sort((a, b) =>
+      a.localeCompare(b),
+    )
 
     if (uniqueVariables.length === 0) {
       return { ok: false, error: 'No variables were detected in this equation.' }

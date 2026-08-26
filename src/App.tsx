@@ -186,7 +186,7 @@ export default function App() {
       <section className="panel" aria-labelledby="library-title">
         <div className="section-heading">
           <div>
-            <p className="step-label">Library</p>
+            <p className="step-label">Library · parser v{FORMULA_PARSER_VERSION}</p>
             <h2 id="library-title">Your formulas</h2>
           </div>
           <span className="count-badge">{formulas.length}</span>
