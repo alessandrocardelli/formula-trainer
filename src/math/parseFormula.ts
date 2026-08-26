@@ -1,6 +1,20 @@
-import { ComputeEngine } from '@cortex-js/compute-engine'
+import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
-const computeEngine = new ComputeEngine()
+let computeEngine: ComputeEngineInstance | undefined
+
+function getComputeEngine() {
+  if (computeEngine) {
+    return computeEngine
+  }
+
+  const ComputeEngineConstructor = window.ComputeEngine?.ComputeEngine
+  if (!ComputeEngineConstructor) {
+    throw new Error('Compute Engine runtime is not available.')
+  }
+
+  computeEngine = new ComputeEngineConstructor()
+  return computeEngine
+}
 
 export interface ParsedFormula {
   expressionJson: unknown
@@ -30,10 +44,12 @@ export function parseFormula(latex: string): FormulaParseResult {
   }
 
   try {
+    const ce = getComputeEngine()
+
     // Keep a raw MathJSON tree close to the original notation.
     // This matters for inputs such as dq/dt, which must not be reduced as
     // ordinary algebra before we add dedicated derivative normalization.
-    const expression = computeEngine.parse(cleanLatex, { form: 'raw' })
+    const expression = ce.parse(cleanLatex, { form: 'raw' })
     const canonical = expression.canonical
 
     if (!expression.isValid || !canonical.isValid) {
@@ -46,7 +62,7 @@ export function parseFormula(latex: string): FormulaParseResult {
 
     const leibnizDifferential = looksLikeLeibnizDifferential(cleanLatex)
     const variables = [...expression.symbols]
-      .filter((symbol) => !computeEngine.box(symbol).isConstant)
+      .filter((symbol) => !ce.box(symbol).isConstant)
       .filter((symbol) => !(leibnizDifferential && symbol === 'd'))
       .sort((a, b) => a.localeCompare(b))
 
