@@ -7,6 +7,7 @@ export interface FormulaRecord {
   latex: string
   expressionJson?: unknown
   variables?: string[]
+  parserVersion?: number
   createdAt: number
   updatedAt: number
 }
