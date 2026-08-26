@@ -47,5 +47,5 @@
 
 - [ ] JSON backup/export
 - [ ] JSON import
-- [ ] GitHub Pages deployment
+- [x] GitHub Pages deployment
 - [ ] Installability verification on Android
