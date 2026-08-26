@@ -34,31 +34,48 @@ interface DifferentialPair {
   denominator: string
 }
 
-function directSymbol(node: unknown): string | undefined {
+function collectDifferentialSymbols(node: unknown, symbols: string[]) {
   if (typeof node === 'string') {
-    return node
+    if (/^d[A-Za-z]$/.test(node)) {
+      symbols.push(node)
+    }
+    return
   }
 
-  if (node && typeof node === 'object' && !Array.isArray(node)) {
+  if (Array.isArray(node)) {
+    for (const child of node.slice(1)) {
+      collectDifferentialSymbols(child, symbols)
+    }
+    return
+  }
+
+  if (node && typeof node === 'object') {
     const symbol = (node as { sym?: unknown }).sym
-    return typeof symbol === 'string' ? symbol : undefined
-  }
+    if (typeof symbol === 'string' && /^d[A-Za-z]$/.test(symbol)) {
+      symbols.push(symbol)
+    }
 
-  return undefined
+    const fn = (node as { fn?: unknown }).fn
+    if (Array.isArray(fn)) {
+      collectDifferentialSymbols(fn, symbols)
+    }
+  }
+}
+
+function singleDifferentialSymbol(node: unknown): string | undefined {
+  const symbols: string[] = []
+  collectDifferentialSymbols(node, symbols)
+  const unique = [...new Set(symbols)]
+  return unique.length === 1 ? unique[0] : undefined
 }
 
 function collectDifferentialPairs(node: unknown, pairs: DifferentialPair[]) {
   if (Array.isArray(node)) {
     if (node[0] === 'Divide' && node.length >= 3) {
-      const numerator = directSymbol(node[1])
-      const denominator = directSymbol(node[2])
+      const numerator = singleDifferentialSymbol(node[1])
+      const denominator = singleDifferentialSymbol(node[2])
 
-      if (
-        numerator &&
-        denominator &&
-        /^d[A-Za-z]$/.test(numerator) &&
-        /^d[A-Za-z]$/.test(denominator)
-      ) {
+      if (numerator && denominator) {
         pairs.push({ numerator, denominator })
       }
     }
