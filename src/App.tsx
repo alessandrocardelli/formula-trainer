@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { FullRecallPractice } from './components/FullRecallPractice'
 import { db, type FormulaRecord } from './db'
 import {
   buildVariableMetadata,
@@ -252,8 +253,8 @@ export default function App() {
           <p className="eyebrow">Local-first · offline-ready</p>
           <h1>Formula Trainer</h1>
           <p className="hero-copy">
-            Build your own formula library first. Active recall, generated exercises and spaced
-            repetition come next.
+            Build your own formula library and practise recalling equations from memory. Generated
+            exercises and spaced repetition come next.
           </p>
         </div>
       </header>
@@ -314,6 +315,8 @@ export default function App() {
           </div>
         </form>
       </section>
+
+      <FullRecallPractice formulas={formulas} />
 
       <section className="panel" aria-labelledby="library-title">
         <div className="section-heading">

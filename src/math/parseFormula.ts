@@ -4,7 +4,7 @@ export const FORMULA_PARSER_VERSION = 5
 
 let computeEngine: ComputeEngineInstance | undefined
 
-function getComputeEngine() {
+export function getComputeEngine() {
   if (computeEngine) {
     return computeEngine
   }
