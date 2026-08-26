@@ -17,7 +17,7 @@
 - [x] Detect variables and constants
 - [x] Store variable metadata and units
 - [ ] Optional per-variable definitions/descriptions, reusable as hints and conceptual exercises
-- [ ] Edit existing formulas
+- [x] Edit existing formulas
 - [ ] Search/filter the formula library
 
 ## Phase 2 — Active practice

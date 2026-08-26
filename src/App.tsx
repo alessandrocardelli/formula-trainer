@@ -26,6 +26,11 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'normal' | 'error'>('normal')
 
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editLatex, setEditLatex] = useState('')
+
   async function refreshFormulas() {
     const records = await db.formulas.orderBy('updatedAt').reverse().toArray()
 
@@ -124,6 +129,65 @@ export default function App() {
     await refreshFormulas()
   }
 
+  function startEditing(formula: FormulaRecord) {
+    setEditingId(formula.id)
+    setEditName(formula.name)
+    setEditCategory(formula.category)
+    setEditLatex(formula.latex)
+    setMessageType('normal')
+    setMessage('')
+  }
+
+  function cancelEditing() {
+    setEditingId(null)
+    setEditName('')
+    setEditCategory('')
+    setEditLatex('')
+  }
+
+  async function saveEditedFormula(event: FormEvent<HTMLFormElement>, formula: FormulaRecord) {
+    event.preventDefault()
+
+    const cleanName = editName.trim()
+    const cleanCategory = editCategory.trim()
+    const cleanLatex = editLatex.trim()
+
+    if (!cleanName || !cleanLatex) {
+      setMessageType('error')
+      setMessage('The edited formula needs a name and an equation.')
+      return
+    }
+
+    const result = parseFormula(cleanLatex)
+    if (!result.ok || !result.parsed) {
+      setMessageType('error')
+      setMessage(result.error ?? 'The edited formula could not be parsed.')
+      return
+    }
+
+    const variableMetadata = buildVariableMetadata(
+      result.parsed.variables,
+      formula.variableMetadata,
+    )
+    const now = Date.now()
+
+    await db.formulas.update(formula.id, {
+      name: cleanName,
+      category: cleanCategory || 'Uncategorized',
+      latex: cleanLatex,
+      expressionJson: result.parsed.expressionJson,
+      variables: result.parsed.variables,
+      variableMetadata,
+      parserVersion: FORMULA_PARSER_VERSION,
+      updatedAt: now,
+    })
+
+    cancelEditing()
+    setMessageType('normal')
+    setMessage(`Updated ${cleanName}. Detected variables: ${result.parsed.variables.join(', ')}.`)
+    await refreshFormulas()
+  }
+
   function updateVariableMetadata(
     formulaId: number,
     symbol: string,
@@ -163,6 +227,10 @@ export default function App() {
   }
 
   async function deleteFormula(id: number) {
+    if (editingId === id) {
+      cancelEditing()
+    }
+
     await db.formulas.delete(id)
     setMessageType('normal')
     setMessage('Formula deleted.')
@@ -268,95 +336,171 @@ export default function App() {
                 formula.variables ?? [],
                 formula.variableMetadata,
               )
+              const isEditing = editingId === formula.id
 
               return (
-                <article className="formula-card" key={formula.id}>
-                  <div className="formula-card-copy">
-                    <span className="category-chip">{formula.category}</span>
-                    <h3>{formula.name}</h3>
-                    <math-field className="formula-preview" value={formula.latex} read-only />
+                <article
+                  className={`formula-card${isEditing ? ' formula-card-editing' : ''}`}
+                  key={formula.id}
+                >
+                  {isEditing ? (
+                    <form
+                      className="formula-edit-form"
+                      onSubmit={(event) => void saveEditedFormula(event, formula)}
+                    >
+                      <div className="formula-edit-grid">
+                        <label>
+                          <span>Name</span>
+                          <input
+                            value={editName}
+                            onChange={(event) => setEditName(event.target.value)}
+                            autoComplete="off"
+                          />
+                        </label>
 
-                    {metadata.length > 0 ? (
-                      <div className="variable-summary-list" aria-label="Variable details">
-                        {metadata.map((entry) => (
-                          <div className="variable-summary-row" key={entry.symbol}>
-                            <span className="variable-chip">{entry.symbol}</span>
-                            <span className="variable-description">
-                              {entry.name || 'No description'}
-                              {entry.unit ? <span className="variable-unit"> · {entry.unit}</span> : null}
-                            </span>
-                          </div>
-                        ))}
+                        <label>
+                          <span>Category</span>
+                          <input
+                            value={editCategory}
+                            onChange={(event) => setEditCategory(event.target.value)}
+                            autoComplete="off"
+                          />
+                        </label>
                       </div>
-                    ) : null}
 
-                    {metadata.length > 0 ? (
-                      <details className="variable-details">
-                        <summary>Edit variable details</summary>
-                        <div className="variable-editor-list">
-                          {metadata.map((entry) => (
-                            <div className="variable-editor-row" key={entry.symbol}>
-                              <div className="variable-editor-symbol">{entry.symbol}</div>
-                              <label>
-                                <span>Name</span>
-                                <input
-                                  value={entry.name}
-                                  onChange={(event) =>
-                                    updateVariableMetadata(
-                                      formula.id,
-                                      entry.symbol,
-                                      'name',
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="e.g. Electric current"
-                                />
-                              </label>
-                              <label>
-                                <span>Unit</span>
-                                <input
-                                  value={entry.unit}
-                                  onChange={(event) =>
-                                    updateVariableMetadata(
-                                      formula.id,
-                                      entry.symbol,
-                                      'unit',
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="e.g. A"
-                                />
-                              </label>
+                      <label>
+                        <span>Formula</span>
+                        <math-field
+                          className="formula-editor formula-edit-math"
+                          value={editLatex}
+                          virtual-keyboard-mode="onfocus"
+                          onInput={(event) =>
+                            setEditLatex((event.currentTarget as MathFieldElement).value)
+                          }
+                          aria-label={`Edit formula for ${formula.name}`}
+                        />
+                      </label>
+
+                      <p className="edit-help">
+                        Existing variable names and units are kept when the same symbols remain in
+                        the edited equation.
+                      </p>
+
+                      <div className="formula-edit-actions">
+                        <button className="button button-primary" type="submit">
+                          Save changes
+                        </button>
+                        <button
+                          className="button button-secondary"
+                          type="button"
+                          onClick={cancelEditing}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="formula-card-copy">
+                        <span className="category-chip">{formula.category}</span>
+                        <h3>{formula.name}</h3>
+                        <math-field className="formula-preview" value={formula.latex} read-only />
+
+                        {metadata.length > 0 ? (
+                          <div className="variable-summary-list" aria-label="Variable details">
+                            {metadata.map((entry) => (
+                              <div className="variable-summary-row" key={entry.symbol}>
+                                <span className="variable-chip">{entry.symbol}</span>
+                                <span className="variable-description">
+                                  {entry.name || 'No description'}
+                                  {entry.unit ? (
+                                    <span className="variable-unit"> · {entry.unit}</span>
+                                  ) : null}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {metadata.length > 0 ? (
+                          <details className="variable-details">
+                            <summary>Edit variable details</summary>
+                            <div className="variable-editor-list">
+                              {metadata.map((entry) => (
+                                <div className="variable-editor-row" key={entry.symbol}>
+                                  <div className="variable-editor-symbol">{entry.symbol}</div>
+                                  <label>
+                                    <span>Name</span>
+                                    <input
+                                      value={entry.name}
+                                      onChange={(event) =>
+                                        updateVariableMetadata(
+                                          formula.id,
+                                          entry.symbol,
+                                          'name',
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="e.g. Electric current"
+                                    />
+                                  </label>
+                                  <label>
+                                    <span>Unit</span>
+                                    <input
+                                      value={entry.unit}
+                                      onChange={(event) =>
+                                        updateVariableMetadata(
+                                          formula.id,
+                                          entry.symbol,
+                                          'unit',
+                                          event.target.value,
+                                        )
+                                      }
+                                      placeholder="e.g. A"
+                                    />
+                                  </label>
+                                </div>
+                              ))}
+
+                              <button
+                                type="button"
+                                className="button button-secondary variable-save-button"
+                                onClick={() => void saveVariableMetadata(formula)}
+                              >
+                                Save variable details
+                              </button>
                             </div>
-                          ))}
+                          </details>
+                        ) : null}
 
-                          <button
-                            type="button"
-                            className="button button-secondary variable-save-button"
-                            onClick={() => void saveVariableMetadata(formula)}
-                          >
-                            Save variable details
-                          </button>
-                        </div>
-                      </details>
-                    ) : null}
+                        {formula.variables?.some((variable) => /^d[A-Za-z]$/.test(variable)) ? (
+                          <details>
+                            <summary>Parser debug</summary>
+                            <p>LaTeX: {formula.latex}</p>
+                            <pre>{JSON.stringify(formula.expressionJson)}</pre>
+                          </details>
+                        ) : null}
+                      </div>
 
-                    {formula.variables?.some((variable) => /^d[A-Za-z]$/.test(variable)) ? (
-                      <details>
-                        <summary>Parser debug</summary>
-                        <p>LaTeX: {formula.latex}</p>
-                        <pre>{JSON.stringify(formula.expressionJson)}</pre>
-                      </details>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    className="delete-button"
-                    onClick={() => void deleteFormula(formula.id)}
-                    aria-label={`Delete ${formula.name}`}
-                  >
-                    Delete
-                  </button>
+                      <div className="formula-card-actions">
+                        <button
+                          type="button"
+                          className="edit-button"
+                          onClick={() => startEditing(formula)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="delete-button"
+                          onClick={() => void deleteFormula(formula.id)}
+                          aria-label={`Delete ${formula.name}`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </article>
               )
             })}
