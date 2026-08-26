@@ -30,10 +30,10 @@ export function parseFormula(latex: string): FormulaParseResult {
   }
 
   try {
-    // Keep a non-canonical MathJSON tree close to the original notation.
+    // Keep a raw MathJSON tree close to the original notation.
     // This matters for inputs such as dq/dt, which must not be reduced as
     // ordinary algebra before we add dedicated derivative normalization.
-    const expression = computeEngine.parse(cleanLatex, { canonical: false })
+    const expression = computeEngine.parse(cleanLatex, { form: 'raw' })
     const canonical = expression.canonical
 
     if (!expression.isValid || !canonical.isValid) {
