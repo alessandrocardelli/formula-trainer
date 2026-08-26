@@ -215,6 +215,13 @@ export default function App() {
                       ))}
                     </div>
                   ) : null}
+                  {formula.variables?.some((variable) => /^d[A-Za-z]$/.test(variable)) ? (
+                    <details>
+                      <summary>Parser debug</summary>
+                      <p>LaTeX: {formula.latex}</p>
+                      <pre>{JSON.stringify(formula.expressionJson)}</pre>
+                    </details>
+                  ) : null}
                 </div>
                 <button
                   type="button"

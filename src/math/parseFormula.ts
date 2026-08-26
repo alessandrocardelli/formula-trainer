@@ -1,6 +1,6 @@
 import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
-export const FORMULA_PARSER_VERSION = 4
+export const FORMULA_PARSER_VERSION = 5
 
 let computeEngine: ComputeEngineInstance | undefined
 
@@ -29,23 +29,86 @@ export interface FormulaParseResult {
   error?: string
 }
 
-function normalizeDifferentialVariables(latex: string, variables: string[]) {
-  const compact = latex.replace(/\s+/g, '')
+interface DifferentialPair {
+  numerator: string
+  denominator: string
+}
 
-  // Compute Engine can expose simple Leibniz differentials as composite
-  // symbols such as "dq" and "dt". Do not rely on MathLive's exact LaTeX
-  // serialization here: if an equation contains a fraction and at least two
-  // two-character d-prefixed symbols, treat those tokens as differentials.
-  const differentialSymbols = variables.filter((symbol) => /^d[A-Za-z]$/.test(symbol))
+function collectDifferentialSymbols(node: unknown, symbols: string[]) {
+  if (typeof node === 'string') {
+    if (/^d[A-Za-z]$/.test(node)) {
+      symbols.push(node)
+    }
+    return
+  }
 
-  if (!compact.includes('\\frac') || differentialSymbols.length < 2) {
+  if (Array.isArray(node)) {
+    for (const child of node.slice(1)) {
+      collectDifferentialSymbols(child, symbols)
+    }
+    return
+  }
+
+  if (node && typeof node === 'object') {
+    const symbol = (node as { sym?: unknown }).sym
+    if (typeof symbol === 'string' && /^d[A-Za-z]$/.test(symbol)) {
+      symbols.push(symbol)
+    }
+
+    const fn = (node as { fn?: unknown }).fn
+    if (Array.isArray(fn)) {
+      collectDifferentialSymbols(fn, symbols)
+    }
+  }
+}
+
+function singleDifferentialSymbol(node: unknown): string | undefined {
+  const symbols: string[] = []
+  collectDifferentialSymbols(node, symbols)
+  const unique = [...new Set(symbols)]
+  return unique.length === 1 ? unique[0] : undefined
+}
+
+function collectDifferentialPairs(node: unknown, pairs: DifferentialPair[]) {
+  if (Array.isArray(node)) {
+    if (node[0] === 'Divide' && node.length >= 3) {
+      const numerator = singleDifferentialSymbol(node[1])
+      const denominator = singleDifferentialSymbol(node[2])
+
+      if (numerator && denominator) {
+        pairs.push({ numerator, denominator })
+      }
+    }
+
+    for (const child of node.slice(1)) {
+      collectDifferentialPairs(child, pairs)
+    }
+    return
+  }
+
+  if (node && typeof node === 'object') {
+    const fn = (node as { fn?: unknown }).fn
+    if (Array.isArray(fn)) {
+      collectDifferentialPairs(fn, pairs)
+    }
+  }
+}
+
+function normalizeDifferentialVariables(expressionJson: unknown, variables: string[]) {
+  const pairs: DifferentialPair[] = []
+  collectDifferentialPairs(expressionJson, pairs)
+
+  if (pairs.length === 0) {
     return variables
   }
 
-  const differentialSet = new Set(differentialSymbols)
+  const differentialSymbols = new Set(
+    pairs.flatMap(({ numerator, denominator }) => [numerator, denominator]),
+  )
+
   return [
-    ...variables.filter((symbol) => !differentialSet.has(symbol)),
-    ...differentialSymbols.map((symbol) => symbol.slice(1)),
+    ...variables.filter((symbol) => !differentialSymbols.has(symbol)),
+    ...[...differentialSymbols].map((symbol) => symbol.slice(1)),
   ]
 }
 
@@ -72,7 +135,11 @@ export function parseFormula(latex: string): FormulaParseResult {
     const detectedVariables = [...expression.symbols].filter(
       (symbol) => !ce.box(symbol).isConstant,
     )
-    const normalizedVariables = normalizeDifferentialVariables(cleanLatex, detectedVariables)
+    const expressionJson = expression.json
+    const normalizedVariables = normalizeDifferentialVariables(
+      expressionJson,
+      detectedVariables,
+    )
     const uniqueVariables = [...new Set(normalizedVariables)].sort((a, b) =>
       a.localeCompare(b),
     )
@@ -84,7 +151,7 @@ export function parseFormula(latex: string): FormulaParseResult {
     return {
       ok: true,
       parsed: {
-        expressionJson: expression.json,
+        expressionJson,
         variables: uniqueVariables,
       },
     }
