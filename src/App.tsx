@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { db, type FormulaRecord } from './db'
+import { parseFormula } from './math/parseFormula'
 
 type MathFieldElement = HTMLElement & {
   value: string
@@ -13,10 +14,38 @@ export default function App() {
   const [latex, setLatex] = useState('')
   const [formulas, setFormulas] = useState<FormulaRecord[]>([])
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'normal' | 'error'>('normal')
 
   async function refreshFormulas() {
     const records = await db.formulas.orderBy('updatedAt').reverse().toArray()
-    setFormulas(records)
+
+    const parsedRecords = await Promise.all(
+      records.map(async (record) => {
+        if (record.expressionJson && record.variables) {
+          return record
+        }
+
+        const result = parseFormula(record.latex)
+        if (!result.ok || !result.parsed) {
+          return record
+        }
+
+        const updated = {
+          ...record,
+          expressionJson: result.parsed.expressionJson,
+          variables: result.parsed.variables,
+        }
+
+        await db.formulas.update(record.id, {
+          expressionJson: result.parsed.expressionJson,
+          variables: result.parsed.variables,
+        })
+
+        return updated
+      }),
+    )
+
+    setFormulas(parsedRecords)
   }
 
   useEffect(() => {
@@ -31,7 +60,15 @@ export default function App() {
     const cleanLatex = latex.trim()
 
     if (!cleanName || !cleanLatex) {
+      setMessageType('error')
       setMessage('Add a name and a formula before saving.')
+      return
+    }
+
+    const result = parseFormula(cleanLatex)
+    if (!result.ok || !result.parsed) {
+      setMessageType('error')
+      setMessage(result.error ?? 'The formula could not be parsed.')
       return
     }
 
@@ -40,6 +77,8 @@ export default function App() {
       name: cleanName,
       category: cleanCategory || 'Uncategorized',
       latex: cleanLatex,
+      expressionJson: result.parsed.expressionJson,
+      variables: result.parsed.variables,
       createdAt: now,
       updatedAt: now,
     })
@@ -47,12 +86,14 @@ export default function App() {
     setName('')
     setCategory('')
     setLatex('')
-    setMessage('Formula saved locally on this device.')
+    setMessageType('normal')
+    setMessage(`Saved. Detected variables: ${result.parsed.variables.join(', ')}.`)
     await refreshFormulas()
   }
 
   async function deleteFormula(id: number) {
     await db.formulas.delete(id)
+    setMessageType('normal')
     setMessage('Formula deleted.')
     await refreshFormulas()
   }
@@ -61,6 +102,7 @@ export default function App() {
     setName('Capacitive reactance')
     setCategory('Electronics')
     setLatex(exampleFormula)
+    setMessageType('normal')
     setMessage('Example loaded. Edit it or save it.')
   }
 
@@ -124,7 +166,10 @@ export default function App() {
             <button className="button button-primary" type="submit">
               Save formula
             </button>
-            <span className="status-message" aria-live="polite">
+            <span
+              className={`status-message${messageType === 'error' ? ' status-message-error' : ''}`}
+              aria-live="polite"
+            >
               {message}
             </span>
           </div>
@@ -153,6 +198,16 @@ export default function App() {
                   <span className="category-chip">{formula.category}</span>
                   <h3>{formula.name}</h3>
                   <math-field className="formula-preview" value={formula.latex} read-only />
+                  {formula.variables && formula.variables.length > 0 ? (
+                    <div className="variable-list" aria-label="Detected variables">
+                      <span className="variable-label">Variables</span>
+                      {formula.variables.map((variable) => (
+                        <span className="variable-chip" key={variable}>
+                          {variable}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   type="button"
