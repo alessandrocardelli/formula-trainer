@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type { VariableMetadata } from './domain/variableMetadata'
 
 export interface FormulaRecord {
   id: number
@@ -7,6 +8,7 @@ export interface FormulaRecord {
   latex: string
   expressionJson?: unknown
   variables?: string[]
+  variableMetadata?: VariableMetadata[]
   parserVersion?: number
   createdAt: number
   updatedAt: number
