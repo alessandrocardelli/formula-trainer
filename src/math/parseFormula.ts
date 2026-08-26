@@ -1,5 +1,7 @@
 import type { ComputeEngine as ComputeEngineInstance } from '@cortex-js/compute-engine'
 
+export const FORMULA_PARSER_VERSION = 2
+
 let computeEngine: ComputeEngineInstance | undefined
 
 function getComputeEngine() {
@@ -27,13 +29,34 @@ export interface FormulaParseResult {
   error?: string
 }
 
-function looksLikeLeibnizDifferential(latex: string) {
-  const compact = latex.replace(/\s+/g, '')
+interface LeibnizDifferential {
+  dependent: string
+  independent: string
+  compositeSymbols: string[]
+}
 
-  return (
-    (compact.includes('\\frac{d') && compact.includes('}{d')) ||
-    (compact.includes('\\frac{\\mathrm{d}') && compact.includes('}{\\mathrm{d}'))
-  )
+function extractLeibnizDifferential(latex: string): LeibnizDifferential | undefined {
+  const compact = latex
+    .replace(/\s+/g, '')
+    .replace(/\\mathrm\{d\}/g, 'd')
+    .replace(/\\operatorname\{d\}/g, 'd')
+
+  // MathLive commonly serializes dq/dt as \frac{dq}{dt}. The Compute Engine
+  // can then interpret "dq" and "dt" as whole identifiers, so normalize this
+  // simple Leibniz form before exposing variables to the rest of the app.
+  const match = compact.match(/\\frac\{d([A-Za-z])\}\{d([A-Za-z])\}/)
+  if (!match) {
+    return undefined
+  }
+
+  const dependent = match[1]
+  const independent = match[2]
+
+  return {
+    dependent,
+    independent,
+    compositeSymbols: [`d${dependent}`, `d${independent}`, 'd'],
+  }
 }
 
 export function parseFormula(latex: string): FormulaParseResult {
@@ -60,13 +83,18 @@ export function parseFormula(latex: string): FormulaParseResult {
       return { ok: false, error: 'Enter a complete equation containing an equals sign.' }
     }
 
-    const leibnizDifferential = looksLikeLeibnizDifferential(cleanLatex)
+    const leibniz = extractLeibnizDifferential(cleanLatex)
     const variables = [...expression.symbols]
       .filter((symbol) => !ce.box(symbol).isConstant)
-      .filter((symbol) => !(leibnizDifferential && symbol === 'd'))
-      .sort((a, b) => a.localeCompare(b))
+      .filter((symbol) => !leibniz?.compositeSymbols.includes(symbol))
 
-    if (variables.length === 0) {
+    if (leibniz) {
+      variables.push(leibniz.dependent, leibniz.independent)
+    }
+
+    const uniqueVariables = [...new Set(variables)].sort((a, b) => a.localeCompare(b))
+
+    if (uniqueVariables.length === 0) {
       return { ok: false, error: 'No variables were detected in this equation.' }
     }
 
@@ -74,7 +102,7 @@ export function parseFormula(latex: string): FormulaParseResult {
       ok: true,
       parsed: {
         expressionJson: expression.json,
-        variables,
+        variables: uniqueVariables,
       },
     }
   } catch {
