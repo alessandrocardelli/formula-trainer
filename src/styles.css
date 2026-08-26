@@ -170,8 +170,13 @@ input:focus,
   font-size: 0.86rem;
 }
 
+.status-message-error {
+  color: #b91c1c;
+}
+
 .count-badge,
-.category-chip {
+.category-chip,
+.variable-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -222,6 +227,32 @@ input:focus,
   background: transparent;
   font-size: 1.2rem;
   pointer-events: none;
+}
+
+.variable-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.variable-label {
+  margin-right: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.variable-chip {
+  min-width: 1.7rem;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.48rem;
+  background: #eef2ff;
+  color: #4338ca;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.76rem;
 }
 
 .delete-button {

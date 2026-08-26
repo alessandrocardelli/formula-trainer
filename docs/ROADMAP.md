@@ -12,9 +12,9 @@
 
 ## Phase 1 — Formula model
 
-- [ ] Parse LaTeX into a symbolic expression
-- [ ] Validate equations before saving
-- [ ] Detect variables and constants
+- [x] Parse LaTeX into a symbolic expression
+- [x] Validate equations before saving
+- [x] Detect variables and constants
 - [ ] Store variable metadata and units
 - [ ] Edit existing formulas
 - [ ] Search/filter the formula library
@@ -47,5 +47,5 @@
 
 - [ ] JSON backup/export
 - [ ] JSON import
-- [ ] GitHub Pages deployment
+- [x] GitHub Pages deployment
 - [ ] Installability verification on Android
