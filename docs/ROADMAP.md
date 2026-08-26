@@ -8,7 +8,7 @@
 - [x] MathLive formula input
 - [x] Local IndexedDB storage
 - [x] Basic formula library
-- [ ] Continuous-integration build passing
+- [x] Continuous-integration build passing
 
 ## Phase 1 — Formula model
 
