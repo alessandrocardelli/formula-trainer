@@ -52,7 +52,7 @@
 
 ## Phase 5 — Portability
 
-- [ ] JSON backup/export
+- [x] JSON backup/export
 - [ ] JSON import
 - [x] GitHub Pages deployment
 - [ ] Installability verification on Android
