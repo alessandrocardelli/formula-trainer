@@ -358,7 +358,9 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
               </>
             ) : null}
 
-            {result !== 'correct' ? <p className="practice-solution-label">Missing term</p> : null}
+            <p className="practice-solution-label">
+              {result === 'revealed' ? 'Missing term' : 'Correct missing term'}
+            </p>
             <math-field
               className="formula-preview practice-solution missing-term-solution"
               value={currentGap.answerLatex}
