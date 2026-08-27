@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { FormulaRecord } from '../db'
 import { compareFormulaAnswer } from '../math/compareFormula'
+import { hideMathKeyboard, openMathKeyboard } from '../math/mathKeyboard'
 
 type MathFieldElement = HTMLElement & {
   value: string
@@ -10,9 +11,10 @@ type PracticeResult = 'correct' | 'incorrect' | 'revealed' | null
 
 interface FullRecallPracticeProps {
   formulas: FormulaRecord[]
+  onAddFormula?: () => void
 }
 
-export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
+export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPracticeProps) {
   const [currentFormulaId, setCurrentFormulaId] = useState<number | null>(null)
   const [answerLatex, setAnswerLatex] = useState('')
   const [result, setResult] = useState<PracticeResult>(null)
@@ -45,6 +47,7 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
       return
     }
 
+    hideMathKeyboard()
     const currentIndex = formulas.findIndex((formula) => formula.id === currentFormula.id)
     const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % formulas.length
     setCurrentFormulaId(formulas[nextIndex].id)
@@ -65,6 +68,7 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
       return
     }
 
+    hideMathKeyboard()
     setError('')
     setResult(comparison.equivalent ? 'correct' : 'incorrect')
   }
@@ -74,15 +78,16 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
       return
     }
 
+    hideMathKeyboard()
     setError('')
     setResult('revealed')
   }
 
   return (
     <section className="panel practice-panel" aria-labelledby="full-recall-title">
-      <div className="section-heading">
+      <div className="section-heading compact-heading">
         <div>
-          <p className="step-label">Step 2 · Practice</p>
+          <p className="step-label">Practice mode</p>
           <h2 id="full-recall-title">Full recall</h2>
         </div>
         {formulas.length > 0 ? <span className="count-badge">{formulas.length}</span> : null}
@@ -91,7 +96,12 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
       {!currentFormula ? (
         <div className="empty-state">
           <p>No formula to practise yet.</p>
-          <span>Add a formula first, then come back here.</span>
+          <span>Add your first formula, then practise it here.</span>
+          {onAddFormula ? (
+            <button className="button button-primary empty-state-action" type="button" onClick={onAddFormula}>
+              Add formula
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="practice-card">
@@ -107,7 +117,8 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
               <math-field
                 className="formula-editor practice-answer"
                 value={answerLatex}
-                virtual-keyboard-mode="onfocus"
+                math-virtual-keyboard-policy="manual"
+                onClick={(event) => openMathKeyboard(event.currentTarget)}
                 onInput={(event) => {
                   setAnswerLatex((event.currentTarget as MathFieldElement).value)
                   setError('')
@@ -165,10 +176,13 @@ export function FullRecallPractice({ formulas }: FullRecallPracticeProps) {
             </button>
           ) : null}
 
-          <p className="practice-note">
-            Equivalent expressions and swapped equation sides are accepted. Solving the equation
-            for a different variable will be trained separately.
-          </p>
+          <details className="practice-info">
+            <summary>How answers are checked</summary>
+            <p>
+              Equivalent expressions and swapped equation sides are accepted. Solving for a different
+              variable will be trained separately.
+            </p>
+          </details>
         </div>
       )}
     </section>
