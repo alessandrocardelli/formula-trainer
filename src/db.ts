@@ -28,9 +28,27 @@ export interface PracticeLogRecord {
   createdAt: number
 }
 
+export interface ReviewCardRecord {
+  id: number
+  formulaId: number
+  mode: PracticeMode
+  due: number
+  stability: number
+  difficulty: number
+  elapsed_days: number
+  scheduled_days: number
+  reps: number
+  lapses: number
+  learning_steps: number
+  state: number
+  last_review?: number
+  updatedAt: number
+}
+
 class FormulaTrainerDB extends Dexie {
   formulas!: EntityTable<FormulaRecord, 'id'>
   practiceLogs!: EntityTable<PracticeLogRecord, 'id'>
+  reviewCards!: EntityTable<ReviewCardRecord, 'id'>
 
   constructor() {
     super('formula-trainer')
@@ -42,6 +60,12 @@ class FormulaTrainerDB extends Dexie {
     this.version(2).stores({
       formulas: '++id, name, category, updatedAt',
       practiceLogs: '++id, formulaId, mode, action, createdAt, [formulaId+mode]',
+    })
+
+    this.version(3).stores({
+      formulas: '++id, name, category, updatedAt',
+      practiceLogs: '++id, formulaId, mode, action, createdAt, [formulaId+mode]',
+      reviewCards: '++id, &[formulaId+mode], formulaId, mode, due, updatedAt',
     })
   }
 }

@@ -1,4 +1,5 @@
 import { db, type PracticeMode } from './db'
+import { rebuildReviewCardFromHistory } from './fsrsScheduler'
 
 export interface PracticeStats {
   checks: number
@@ -38,6 +39,8 @@ export async function recordPracticeCheck(input: RecordPracticeCheckInput) {
     responseTimeMs: cleanResponseTime(input.responseTimeMs),
     createdAt: Date.now(),
   })
+
+  await rebuildReviewCardFromHistory(input.formulaId, input.mode)
 }
 
 export async function recordPracticeReveal(input: RecordPracticeRevealInput) {
@@ -48,6 +51,8 @@ export async function recordPracticeReveal(input: RecordPracticeRevealInput) {
     responseTimeMs: cleanResponseTime(input.responseTimeMs),
     createdAt: Date.now(),
   })
+
+  await rebuildReviewCardFromHistory(input.formulaId, input.mode)
 }
 
 export async function getPracticeStats(

@@ -13,7 +13,8 @@
     "dexie": "^4.0.10",
     "mathlive": "^0.110.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "ts-fsrs": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
