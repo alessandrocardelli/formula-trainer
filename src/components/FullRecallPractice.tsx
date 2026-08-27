@@ -156,7 +156,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     setResult('revealed')
   }
 
-  function handleAnswerInput(event: Event) {
+  function handleAnswerInput(event: FormEvent<HTMLElement>) {
     setAnswerLatex((event.currentTarget as MathFieldElement).value)
     setError('')
     setResult(null)
