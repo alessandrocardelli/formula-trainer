@@ -8,6 +8,8 @@
 - [x] MathLive formula input
 - [x] Local IndexedDB storage
 - [x] Basic formula library
+- [x] Mobile-first Practice / Library / Add navigation
+- [x] Explicit mobile math-keyboard control
 - [x] Continuous-integration build passing
 
 ## Phase 1 — Formula model
