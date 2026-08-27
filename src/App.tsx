@@ -12,7 +12,7 @@ type MathFieldElement = HTMLElement & {
   value: string
 }
 
-type VariableMetadataField = 'name' | 'unit'
+type VariableMetadataField = 'name' | 'unit' | 'definition'
 type AppView = 'practice' | 'library' | 'add'
 
 const exampleFormula = String.raw`X_C=\frac{1}{2\pi fC}`
@@ -32,6 +32,8 @@ export default function App() {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [latex, setLatex] = useState('')
+  const [explanation, setExplanation] = useState('')
+  const [draftVariableMetadata, setDraftVariableMetadata] = useState<VariableMetadata[]>([])
   const [formulas, setFormulas] = useState<FormulaRecord[]>([])
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'normal' | 'error'>('normal')
@@ -40,6 +42,7 @@ export default function App() {
   const [editName, setEditName] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [editLatex, setEditLatex] = useState('')
+  const [editExplanation, setEditExplanation] = useState('')
 
   function switchView(view: AppView) {
     hideMathKeyboard()
@@ -104,12 +107,47 @@ export default function App() {
     void refreshFormulas()
   }, [])
 
+  useEffect(() => {
+    const cleanLatex = latex.trim()
+
+    if (!cleanLatex) {
+      setDraftVariableMetadata([])
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const result = parseFormula(cleanLatex)
+
+      if (!result.ok || !result.parsed) {
+        setDraftVariableMetadata([])
+        return
+      }
+
+      setDraftVariableMetadata((current) =>
+        buildVariableMetadata(result.parsed!.variables, current),
+      )
+    }, 250)
+
+    return () => window.clearTimeout(timer)
+  }, [latex])
+
+  function updateDraftVariableMetadata(
+    symbol: string,
+    field: VariableMetadataField,
+    value: string,
+  ) {
+    setDraftVariableMetadata((current) =>
+      current.map((entry) => (entry.symbol === symbol ? { ...entry, [field]: value } : entry)),
+    )
+  }
+
   async function saveFormula(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const cleanName = name.trim()
     const cleanCategory = category.trim()
     const cleanLatex = latex.trim()
+    const cleanExplanation = explanation.trim()
 
     if (!cleanName || !cleanLatex) {
       setMessageType('error')
@@ -124,14 +162,20 @@ export default function App() {
       return
     }
 
+    const variableMetadata = buildVariableMetadata(
+      result.parsed.variables,
+      draftVariableMetadata,
+    )
     const now = Date.now()
+
     await db.formulas.add({
       name: cleanName,
       category: cleanCategory || 'Uncategorized',
       latex: cleanLatex,
+      explanation: cleanExplanation || undefined,
       expressionJson: result.parsed.expressionJson,
       variables: result.parsed.variables,
-      variableMetadata: buildVariableMetadata(result.parsed.variables),
+      variableMetadata,
       parserVersion: FORMULA_PARSER_VERSION,
       createdAt: now,
       updatedAt: now,
@@ -141,6 +185,8 @@ export default function App() {
     setName('')
     setCategory('')
     setLatex('')
+    setExplanation('')
+    setDraftVariableMetadata([])
     setMessageType('normal')
     setMessage(`Saved. Detected variables: ${result.parsed.variables.join(', ')}.`)
     await refreshFormulas()
@@ -151,6 +197,7 @@ export default function App() {
     setEditName(formula.name)
     setEditCategory(formula.category)
     setEditLatex(formula.latex)
+    setEditExplanation(formula.explanation ?? '')
     setMessageType('normal')
     setMessage('')
   }
@@ -161,6 +208,7 @@ export default function App() {
     setEditName('')
     setEditCategory('')
     setEditLatex('')
+    setEditExplanation('')
   }
 
   async function saveEditedFormula(event: FormEvent<HTMLFormElement>, formula: FormulaRecord) {
@@ -169,6 +217,7 @@ export default function App() {
     const cleanName = editName.trim()
     const cleanCategory = editCategory.trim()
     const cleanLatex = editLatex.trim()
+    const cleanExplanation = editExplanation.trim()
 
     if (!cleanName || !cleanLatex) {
       setMessageType('error')
@@ -193,6 +242,7 @@ export default function App() {
       name: cleanName,
       category: cleanCategory || 'Uncategorized',
       latex: cleanLatex,
+      explanation: cleanExplanation || undefined,
       expressionJson: result.parsed.expressionJson,
       variables: result.parsed.variables,
       variableMetadata,
@@ -259,8 +309,9 @@ export default function App() {
     setName('Capacitive reactance')
     setCategory('Electronics')
     setLatex(exampleFormula)
+    setExplanation('')
     setMessageType('normal')
-    setMessage('Example loaded. Edit it or save it.')
+    setMessage('Example loaded. Complete the optional details or save it.')
   }
 
   return (
@@ -322,6 +373,78 @@ export default function App() {
                 />
               </label>
 
+              {draftVariableMetadata.length > 0 ? (
+                <section className="detected-variable-panel" aria-labelledby="detected-variables-title">
+                  <div className="detected-variable-heading">
+                    <div>
+                      <p className="step-label">Detected automatically</p>
+                      <h3 id="detected-variables-title">Variables</h3>
+                    </div>
+                    <span className="count-badge">{draftVariableMetadata.length}</span>
+                  </div>
+
+                  <p className="metadata-help">
+                    Name and unit may be suggested when the symbol is familiar. Check them before saving.
+                    Definitions are optional and are kept as your authoritative explanation.
+                  </p>
+
+                  <div className="draft-variable-list">
+                    {draftVariableMetadata.map((entry) => (
+                      <div className="draft-variable-card" key={entry.symbol}>
+                        <div className="draft-variable-symbol">{entry.symbol}</div>
+                        <div className="draft-variable-fields">
+                          <label>
+                            <span>Name</span>
+                            <input
+                              value={entry.name}
+                              onChange={(event) =>
+                                updateDraftVariableMetadata(entry.symbol, 'name', event.target.value)
+                              }
+                              placeholder="e.g. Electric current"
+                            />
+                          </label>
+                          <label>
+                            <span>Unit</span>
+                            <input
+                              value={entry.unit}
+                              onChange={(event) =>
+                                updateDraftVariableMetadata(entry.symbol, 'unit', event.target.value)
+                              }
+                              placeholder="e.g. A"
+                            />
+                          </label>
+                          <label className="draft-definition-field">
+                            <span>Definition <small>optional</small></span>
+                            <textarea
+                              value={entry.definition}
+                              onChange={(event) =>
+                                updateDraftVariableMetadata(
+                                  entry.symbol,
+                                  'definition',
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="What does this variable represent?"
+                              rows={2}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <label className="formula-explanation-field">
+                <span>Formula explanation <small>optional</small></span>
+                <textarea
+                  value={explanation}
+                  onChange={(event) => setExplanation(event.target.value)}
+                  placeholder="In your own words, what does this formula express?"
+                  rows={3}
+                />
+              </label>
+
               <div className="form-actions">
                 <button className="button button-primary" type="submit">
                   Save formula
@@ -360,7 +483,11 @@ export default function App() {
               <div className="empty-state">
                 <p>No formulas yet.</p>
                 <span>Add one to start building your library.</span>
-                <button className="button button-primary empty-state-action" type="button" onClick={() => switchView('add')}>
+                <button
+                  className="button button-primary empty-state-action"
+                  type="button"
+                  onClick={() => switchView('add')}
+                >
                   Add formula
                 </button>
               </div>
@@ -417,8 +544,18 @@ export default function App() {
                             />
                           </label>
 
+                          <label>
+                            <span>Formula explanation <small>optional</small></span>
+                            <textarea
+                              value={editExplanation}
+                              onChange={(event) => setEditExplanation(event.target.value)}
+                              placeholder="What does this formula express?"
+                              rows={3}
+                            />
+                          </label>
+
                           <p className="edit-help">
-                            Existing variable names and units are kept when the same symbols remain.
+                            Existing variable metadata is kept when the same symbols remain.
                           </p>
 
                           <div className="formula-edit-actions">
@@ -465,6 +602,13 @@ export default function App() {
                           <details className="formula-more">
                             <summary>Details & variables</summary>
 
+                            {formula.explanation ? (
+                              <div className="formula-explanation-summary">
+                                <strong>Explanation</strong>
+                                <p>{formula.explanation}</p>
+                              </div>
+                            ) : null}
+
                             {metadata.length > 0 ? (
                               <div className="variable-summary-list" aria-label="Variable details">
                                 {metadata.map((entry) => (
@@ -474,6 +618,9 @@ export default function App() {
                                       {entry.name || 'No description'}
                                       {entry.unit ? (
                                         <span className="variable-unit"> · {entry.unit}</span>
+                                      ) : null}
+                                      {entry.definition ? (
+                                        <span className="variable-definition-summary">{entry.definition}</span>
                                       ) : null}
                                     </span>
                                   </div>
@@ -486,7 +633,7 @@ export default function App() {
                                 <summary>Edit variable details</summary>
                                 <div className="variable-editor-list">
                                   {metadata.map((entry) => (
-                                    <div className="variable-editor-row" key={entry.symbol}>
+                                    <div className="variable-editor-row variable-editor-row-rich" key={entry.symbol}>
                                       <div className="variable-editor-symbol">{entry.symbol}</div>
                                       <label>
                                         <span>Name</span>
@@ -516,6 +663,22 @@ export default function App() {
                                             )
                                           }
                                           placeholder="e.g. A"
+                                        />
+                                      </label>
+                                      <label className="variable-definition-editor">
+                                        <span>Definition <small>optional</small></span>
+                                        <textarea
+                                          value={entry.definition}
+                                          onChange={(event) =>
+                                            updateVariableMetadata(
+                                              formula.id,
+                                              entry.symbol,
+                                              'definition',
+                                              event.target.value,
+                                            )
+                                          }
+                                          placeholder="What does this variable represent?"
+                                          rows={2}
                                         />
                                       </label>
                                     </div>
