@@ -37,7 +37,7 @@
 
 ## Phase 3 — Learning engine
 
-- [ ] Performance history per formula and exercise type
+- [x] Performance history per formula and exercise type
 - [ ] FSRS scheduling
 - [ ] Review queue
 - [ ] Weakness/progress statistics
@@ -54,5 +54,6 @@
 
 - [x] JSON backup/export
 - [x] JSON import with validation and non-destructive merge
+- [x] Back up and restore practice history
 - [x] GitHub Pages deployment
 - [ ] Installability verification on Android
