@@ -1,5 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { downloadFormulaTrainerBackup } from './backup'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  downloadFormulaTrainerBackup,
+  importFormulaTrainerBackup,
+} from './backup'
 import { FullRecallPractice } from './components/FullRecallPractice'
 import { db, type FormulaRecord } from './db'
 import {
@@ -317,6 +320,27 @@ export default function App() {
     }
   }
 
+  async function importBackup(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    try {
+      const result = await importFormulaTrainerBackup(file)
+      await refreshFormulas()
+      setMessageType('normal')
+      setMessage(
+        `Backup checked: ${result.added} added, ${result.updated} updated, ${result.skipped} already current.`,
+      )
+    } catch (error) {
+      setMessageType('error')
+      setMessage(error instanceof Error ? error.message : 'The backup could not be imported.')
+    }
+  }
+
   function loadExample() {
     setName('Capacitive reactance')
     setCategory('Electronics')
@@ -474,13 +498,22 @@ export default function App() {
 
         {activeView === 'library' ? (
           <section className="panel screen-content" aria-labelledby="library-title">
-            <div className="section-heading compact-heading">
+            <div className="section-heading compact-heading library-heading">
               <div>
                 <p className="step-label">Formula library</p>
                 <h2 id="library-title">Your formulas</h2>
               </div>
-              <div className="formula-card-actions">
+              <div className="backup-actions">
                 <span className="count-badge">{formulas.length}</span>
+                <label className="button button-secondary backup-import-button">
+                  Import backup
+                  <input
+                    className="backup-file-input"
+                    type="file"
+                    accept="application/json,.json"
+                    onChange={(event) => void importBackup(event)}
+                  />
+                </label>
                 <button
                   className="button button-secondary"
                   type="button"
@@ -504,7 +537,7 @@ export default function App() {
             {formulas.length === 0 ? (
               <div className="empty-state">
                 <p>No formulas yet.</p>
-                <span>Add one to start building your library.</span>
+                <span>Add one or import a Formula Trainer backup.</span>
                 <button
                   className="button button-primary empty-state-action"
                   type="button"
