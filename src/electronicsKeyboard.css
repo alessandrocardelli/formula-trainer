@@ -1,0 +1,22 @@
+body {
+  --keycap-height: 38px;
+  --keycap-max-width: 52px;
+  --keycap-gap: 3px;
+  --keycap-font-size: 17px;
+  --keycap-shift-font-size: 9px;
+  --keycap-small-font-size: 10px;
+  --keycap-extra-small-font-size: 9px;
+  --keyboard-toolbar-font-size: 13px;
+  --keyboard-padding-horizontal: 4px;
+  --keyboard-padding-top: 4px;
+  --keyboard-padding-bottom: max(4px, env(safe-area-inset-bottom));
+  --keyboard-row-padding-left: 2px;
+  --keyboard-row-padding-right: 2px;
+}
+
+@media (min-width: 700px) {
+  body {
+    --keycap-height: 42px;
+    --keycap-max-width: 58px;
+  }
+}
