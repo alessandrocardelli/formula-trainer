@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { FormulaRecord, PracticeMode } from '../db'
+import {
+  getNextReview,
+  getReviewQueueSummary,
+  type ReviewQueueSummary,
+} from '../fsrsScheduler'
 import { compareExpressionAnswer } from '../math/compareExpression'
 import { compareFormulaAnswer } from '../math/compareFormula'
 import { hideMathKeyboard, openMathKeyboard } from '../math/mathKeyboard'
@@ -39,6 +44,25 @@ function shuffleGaps(gaps: MissingTermGap[]) {
   return shuffled
 }
 
+function formatNextDue(timestamp: number) {
+  const diffMs = timestamp - Date.now()
+  const minutes = Math.max(1, Math.round(diffMs / 60_000))
+
+  if (minutes < 60) {
+    return `in ${minutes} min`
+  }
+
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) {
+    return `in ${hours} h`
+  }
+
+  return new Date(timestamp).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
 export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPracticeProps) {
   const [mode, setMode] = useState<PracticeMode>('full-recall')
   const [currentFormulaId, setCurrentFormulaId] = useState<number | null>(null)
@@ -48,6 +72,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   const [result, setResult] = useState<PracticeResult>(null)
   const [error, setError] = useState('')
   const [stats, setStats] = useState<PracticeStats | null>(null)
+  const [queueSummary, setQueueSummary] = useState<ReviewQueueSummary | null>(null)
   const [trackingError, setTrackingError] = useState('')
   const attemptStartedAtRef = useRef(Date.now())
 
@@ -67,13 +92,30 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   useEffect(() => {
     if (formulas.length === 0) {
       setCurrentFormulaId(null)
+      setQueueSummary(null)
       return
     }
 
-    if (!currentFormulaId || !formulas.some((formula) => formula.id === currentFormulaId)) {
-      setCurrentFormulaId(formulas[0].id)
+    let cancelled = false
+    const formulaIds = formulas.map((formula) => formula.id)
+
+    void getNextReview(formulaIds, mode)
+      .then((nextReview) => {
+        if (!cancelled && nextReview) {
+          setCurrentFormulaId(nextReview.formulaId)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCurrentFormulaId(formulas[0].id)
+          setTrackingError('The review queue could not be loaded.')
+        }
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [formulas, currentFormulaId])
+  }, [formulas, mode])
 
   useEffect(() => {
     setGapIndex(0)
@@ -108,6 +150,32 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     }
   }, [currentFormula, mode])
 
+  useEffect(() => {
+    if (formulas.length === 0) {
+      setQueueSummary(null)
+      return
+    }
+
+    let cancelled = false
+    const formulaIds = formulas.map((formula) => formula.id)
+    void getReviewQueueSummary(formulaIds, mode)
+      .then((summary) => {
+        if (!cancelled) {
+          setQueueSummary(summary)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQueueSummary(null)
+          setTrackingError('The review queue could not be loaded.')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [formulas, mode])
+
   function responseTimeMs() {
     return Math.max(0, Date.now() - attemptStartedAtRef.current)
   }
@@ -119,6 +187,16 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     }
   }
 
+  async function refreshQueue(practiceMode: PracticeMode) {
+    const summary = await getReviewQueueSummary(
+      formulas.map((formula) => formula.id),
+      practiceMode,
+    )
+    if (mode === practiceMode) {
+      setQueueSummary(summary)
+    }
+  }
+
   function persistCheck(formulaId: number, practiceMode: PracticeMode, correct: boolean) {
     const elapsed = responseTimeMs()
     void recordPracticeCheck({
@@ -127,9 +205,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       correct,
       responseTimeMs: elapsed,
     })
-      .then(() => refreshStats(formulaId, practiceMode))
+      .then(() => Promise.all([
+        refreshStats(formulaId, practiceMode),
+        refreshQueue(practiceMode),
+      ]))
       .then(() => setTrackingError(''))
-      .catch(() => setTrackingError('This attempt could not be saved.'))
+      .catch(() => setTrackingError('This attempt could not be saved or scheduled.'))
   }
 
   function persistReveal(formulaId: number, practiceMode: PracticeMode) {
@@ -139,9 +220,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       mode: practiceMode,
       responseTimeMs: elapsed,
     })
-      .then(() => refreshStats(formulaId, practiceMode))
+      .then(() => Promise.all([
+        refreshStats(formulaId, practiceMode),
+        refreshQueue(practiceMode),
+      ]))
       .then(() => setTrackingError(''))
-      .catch(() => setTrackingError('This reveal could not be saved.'))
+      .catch(() => setTrackingError('This reveal could not be saved or scheduled.'))
   }
 
   function resetAttempt() {
@@ -162,15 +246,30 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     resetAttempt()
   }
 
-  function goToNextFormula() {
+  async function goToNextFormula() {
     if (!currentFormula || formulas.length === 0) {
       return
     }
 
     hideMathKeyboard()
-    const currentIndex = formulas.findIndex((formula) => formula.id === currentFormula.id)
-    const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % formulas.length
-    setCurrentFormulaId(formulas[nextIndex].id)
+
+    try {
+      const nextReview = await getNextReview(
+        formulas.map((formula) => formula.id),
+        mode,
+        currentFormula.id,
+      )
+
+      if (nextReview) {
+        setCurrentFormulaId(nextReview.formulaId)
+      }
+    } catch {
+      const currentIndex = formulas.findIndex((formula) => formula.id === currentFormula.id)
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % formulas.length
+      setCurrentFormulaId(formulas[nextIndex].id)
+      setTrackingError('The review queue could not choose the next formula.')
+    }
+
     setGapIndex(0)
     resetAttempt()
   }
@@ -179,7 +278,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     hideMathKeyboard()
 
     if (missingTermGaps.length === 0) {
-      goToNextFormula()
+      void goToNextFormula()
+      return
+    }
+
+    if (formulas.length > 1) {
+      void goToNextFormula()
       return
     }
 
@@ -187,11 +291,6 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     if (nextGapIndex < missingTermGaps.length) {
       setGapIndex(nextGapIndex)
       resetAttempt()
-      return
-    }
-
-    if (formulas.length > 1) {
-      goToNextFormula()
       return
     }
 
@@ -340,8 +439,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
                 Try again
               </button>
               {formulas.length > 1 ? (
-                <button className="button button-secondary" type="button" onClick={goToNextFormula}>
-                  Next formula
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => void goToNextFormula()}
+                >
+                  Next review
                 </button>
               ) : null}
             </div>
@@ -349,8 +452,8 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         ) : null}
 
         {!result && formulas.length > 1 ? (
-          <button className="practice-next-link" type="button" onClick={goToNextFormula}>
-            Skip to next formula
+          <button className="practice-next-link" type="button" onClick={() => void goToNextFormula()}>
+            Skip to next review
           </button>
         ) : null}
 
@@ -376,8 +479,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           <p>No useful gap could be generated for this formula yet.</p>
           <span>Missing term currently hides a variable that appears once on the right-hand side.</span>
           {formulas.length > 1 ? (
-            <button className="button button-secondary empty-state-action" type="button" onClick={goToNextFormula}>
-              Try next formula
+            <button
+              className="button button-secondary empty-state-action"
+              type="button"
+              onClick={() => void goToNextFormula()}
+            >
+              Try next review
             </button>
           ) : null}
         </div>
@@ -522,6 +629,16 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         </div>
         {formulas.length > 0 ? <span className="count-badge">{formulas.length}</span> : null}
       </div>
+
+      {queueSummary ? (
+        <div className="review-queue-summary" aria-label="FSRS review queue">
+          <span className="review-queue-label">FSRS queue</span>
+          <span><strong>{queueSummary.dueNow}</strong> due now</span>
+          {queueSummary.dueNow === 0 && queueSummary.nextDue ? (
+            <span>Next {formatNextDue(queueSummary.nextDue)}</span>
+          ) : null}
+        </div>
+      ) : null}
 
       {currentFormula && stats && (stats.checks > 0 || stats.reveals > 0) ? (
         <div className="practice-history-summary" aria-label="Practice history for this formula and mode">
