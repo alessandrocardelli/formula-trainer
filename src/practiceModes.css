@@ -1,0 +1,54 @@
+.practice-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+  padding: 0.28rem;
+  border-radius: 0.82rem;
+  background: #f1f5f9;
+}
+
+.practice-mode-button {
+  min-height: 38px;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.practice-mode-button-active {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.missing-term-prompt {
+  display: grid;
+  justify-items: start;
+}
+
+.missing-term-formula {
+  display: block;
+  width: 100%;
+  margin-top: 0.8rem;
+  padding: 0.7rem 0;
+  overflow-x: auto;
+  font-size: clamp(1.35rem, 6vw, 1.8rem);
+}
+
+.missing-term-answer {
+  min-height: 52px;
+}
+
+.missing-term-solution {
+  min-height: 1.8rem;
+}
+
+@media (min-width: 700px) {
+  .practice-mode-switch {
+    width: min(100%, 420px);
+  }
+}

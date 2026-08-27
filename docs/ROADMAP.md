@@ -25,7 +25,7 @@
 ## Phase 2 — Active practice
 
 - [x] Full recall exercise
-- [ ] Missing-term exercise
+- [x] Missing-term exercise
 - [ ] General symbolic answer equivalence
 - [ ] Solve-for-variable exercise
 - [ ] Numerical exercise generator
