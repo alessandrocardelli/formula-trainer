@@ -1,0 +1,157 @@
+textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 0.68rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  outline: none;
+  resize: vertical;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  line-height: 1.45;
+}
+
+textarea:focus {
+  border-color: #475569;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.14);
+}
+
+label small {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.detected-variable-panel,
+.formula-explanation-field {
+  grid-column: 1 / -1;
+}
+
+.detected-variable-panel {
+  padding: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+}
+
+.detected-variable-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.detected-variable-heading h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.metadata-help {
+  margin: 0.6rem 0 0.8rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.draft-variable-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.draft-variable-card {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: #fff;
+}
+
+.draft-variable-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-height: 42px;
+  border-radius: 0.68rem;
+  background: #eef2ff;
+  color: #4338ca;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.draft-variable-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: 0.6rem;
+}
+
+.draft-definition-field {
+  grid-column: 1 / -1;
+}
+
+.formula-explanation-field textarea {
+  min-height: 92px;
+}
+
+.formula-explanation-summary {
+  margin-top: 0.75rem;
+  padding: 0.7rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.formula-explanation-summary strong {
+  color: #334155;
+}
+
+.formula-explanation-summary p {
+  margin: 0.3rem 0 0;
+}
+
+.variable-definition-summary {
+  display: block;
+  margin-top: 0.18rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.variable-editor-row-rich {
+  align-items: start;
+}
+
+.variable-definition-editor {
+  grid-column: 2 / -1;
+}
+
+.variable-definition-editor textarea {
+  min-height: 66px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 520px) {
+  .draft-variable-card {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+    padding: 0.65rem;
+  }
+
+  .draft-variable-fields {
+    grid-template-columns: minmax(0, 1fr) 4.8rem;
+    gap: 0.5rem;
+  }
+
+  .detected-variable-panel {
+    padding: 0.75rem;
+  }
+
+  .variable-definition-editor {
+    grid-column: 2;
+  }
+}
