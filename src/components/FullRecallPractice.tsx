@@ -4,6 +4,7 @@ import { compareExpressionAnswer } from '../math/compareExpression'
 import { compareFormulaAnswer } from '../math/compareFormula'
 import { hideMathKeyboard, openMathKeyboard } from '../math/mathKeyboard'
 import { buildMissingTermGaps, type MissingTermGap } from '../math/missingTerm'
+import { PracticeExplanation } from './PracticeExplanation'
 
 type MathFieldElement = HTMLElement & {
   value: string
@@ -226,11 +227,27 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
                   : 'Answer revealed.'}
             </p>
 
+            {result === 'incorrect' && answerLatex ? (
+              <>
+                <p className="practice-solution-label">Your answer</p>
+                <math-field
+                  className="formula-preview practice-user-answer"
+                  value={answerLatex}
+                  read-only
+                />
+              </>
+            ) : null}
+
             {result !== 'correct' ? <p className="practice-solution-label">Expected formula</p> : null}
             <math-field
               className="formula-preview practice-solution"
               value={currentFormula.latex}
               read-only
+            />
+
+            <PracticeExplanation
+              formula={currentFormula}
+              expanded={result !== 'correct'}
             />
 
             <div className="practice-feedback-actions">
@@ -330,6 +347,17 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
                   : 'Answer revealed.'}
             </p>
 
+            {result === 'incorrect' && answerLatex ? (
+              <>
+                <p className="practice-solution-label">Your answer</p>
+                <math-field
+                  className="formula-preview practice-user-answer"
+                  value={answerLatex}
+                  read-only
+                />
+              </>
+            ) : null}
+
             {result !== 'correct' ? <p className="practice-solution-label">Missing term</p> : null}
             <math-field
               className="formula-preview practice-solution missing-term-solution"
@@ -342,6 +370,12 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
               className="formula-preview practice-solution"
               value={currentFormula.latex}
               read-only
+            />
+
+            <PracticeExplanation
+              formula={currentFormula}
+              focusSymbol={currentGap.symbol}
+              expanded={result !== 'correct'}
             />
 
             <div className="practice-feedback-actions">
