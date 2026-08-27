@@ -10,6 +10,7 @@ import './metadataFlow.css'
 import './backupControls.css'
 import './pwaUpdatePrompt.css'
 import './appMenu.css'
+import './electronicsKeyboard.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
