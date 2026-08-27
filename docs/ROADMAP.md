@@ -38,9 +38,10 @@
 ## Phase 3 — Learning engine
 
 - [x] Performance history per formula and exercise type
-- [ ] FSRS scheduling
-- [ ] Review queue
-- [ ] Weakness/progress statistics
+- [x] FSRS scheduling per formula and exercise type
+- [x] Due-first review queue
+- [ ] Dedicated Statistics view with overall, per-mode, and per-formula progress
+- [ ] Weakness/progress statistics and trends
 
 ## Phase 4 — Advanced exercises
 
