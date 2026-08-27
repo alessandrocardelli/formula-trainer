@@ -1,0 +1,40 @@
+.backup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.backup-import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.backup-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 520px) {
+  .library-heading {
+    align-items: flex-start;
+  }
+
+  .backup-actions {
+    max-width: 10.5rem;
+  }
+
+  .backup-actions .button {
+    min-width: 7.8rem;
+  }
+}
