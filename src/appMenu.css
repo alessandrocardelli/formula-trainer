@@ -1,0 +1,188 @@
+.app-header {
+  position: relative;
+  padding-right: 3.1rem;
+}
+
+.app-menu-button {
+  position: absolute;
+  top: 0.2rem;
+  right: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #475569;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.app-menu-button:hover,
+.app-menu-button:focus-visible {
+  color: #111827;
+  border-color: #cbd5e1;
+}
+
+.app-menu-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(3px);
+}
+
+.app-menu-sheet {
+  width: min(100%, 620px);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  padding: 0.55rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  border: 1px solid #e2e8f0;
+  border-bottom: 0;
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: #fff;
+  box-shadow: 0 -24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.app-menu-handle {
+  width: 2.8rem;
+  height: 0.28rem;
+  margin: 0 auto 0.7rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.app-menu-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.app-menu-heading h2 {
+  margin: 0;
+}
+
+.app-menu-close {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.app-menu-section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.app-menu-section h3 {
+  margin: 0 0 0.3rem;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.app-menu-section p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.app-menu-section > .button {
+  justify-self: start;
+}
+
+.button-danger {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.button-danger-solid {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.button-danger:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.app-menu-confirm {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.85rem;
+  background: #fef2f2;
+}
+
+.app-menu-confirm strong {
+  color: #991b1b;
+  font-size: 0.86rem;
+}
+
+.app-menu-confirm p {
+  color: #7f1d1d;
+}
+
+.app-menu-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.app-menu-status {
+  padding: 0.7rem;
+  border-radius: 0.75rem;
+  background: #f0fdf4;
+  color: #166534 !important;
+}
+
+.app-menu-status-error {
+  background: #fef2f2;
+  color: #991b1b !important;
+}
+
+.app-menu-footnote {
+  margin: 0;
+  padding: 0.85rem 0 0.2rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 700px) {
+  .app-menu-backdrop {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .app-menu-sheet {
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+  }
+
+  .app-menu-handle {
+    display: none;
+  }
+}
