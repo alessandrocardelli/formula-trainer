@@ -12,6 +12,7 @@
 - [x] Explicit mobile math-keyboard control
 - [x] Continuous-integration build passing
 - [ ] App menu/settings entry point for secondary actions and preferences
+- [ ] Electronics-focused MathLive keyboard profiles with compact context-specific layouts
 
 ## Phase 1 — Formula model
 
