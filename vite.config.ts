@@ -38,7 +38,7 @@ export default defineConfig({
     vendoredComputeEngine(),
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icon.svg'],
       workbox: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
