@@ -21,9 +21,11 @@ Example for `I = dq/dt`:
 - `I`: electric current, measured in amperes (A);
 - explanation: current describes how quickly electric charge changes or flows with time.
 
-## Data dependency
+## Data source
 
-Variable name and unit metadata already exist. Rich explanations should be implemented after optional variable definitions/descriptions are added to the formula model, so feedback is grounded in stored formula metadata rather than hard-coded prose.
+The formula model now stores variable name, unit and an optional user-approved definition, plus an optional formula-level explanation. These fields are collected directly in the Add formula flow and remain editable in the Library.
+
+Rich practice feedback should use only this stored metadata as its authoritative source. Familiar symbols may receive name/unit suggestions, but definitions and formula explanations are user-editable and are not silently generated or treated as correct by the app.
 
 ## Practice integration
 

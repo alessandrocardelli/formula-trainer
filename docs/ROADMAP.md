@@ -18,7 +18,9 @@
 - [x] Validate equations before saving
 - [x] Detect variables and constants
 - [x] Store variable metadata and units
-- [ ] Optional per-variable definitions/descriptions, reusable as hints and conceptual exercises
+- [x] Optional per-variable definitions/descriptions, reusable as hints and conceptual exercises
+- [x] Optional formula-level explanation/meaning
+- [x] Edit variable metadata during the Add formula flow before saving
 - [x] Edit existing formulas
 - [ ] Search/filter the formula library
 

@@ -2,9 +2,10 @@ export interface VariableMetadata {
   symbol: string
   name: string
   unit: string
+  definition: string
 }
 
-const commonVariableMetadata: Record<string, Omit<VariableMetadata, 'symbol'>> = {
+const commonVariableMetadata: Record<string, Pick<VariableMetadata, 'name' | 'unit'>> = {
   I: { name: 'Electric current', unit: 'A' },
   i: { name: 'Electric current', unit: 'A' },
   q: { name: 'Electric charge', unit: 'C' },
@@ -32,15 +33,13 @@ export function buildVariableMetadata(
 
   return variables.map((symbol) => {
     const saved = existingBySymbol.get(symbol)
-    if (saved) {
-      return saved
-    }
-
     const suggested = commonVariableMetadata[symbol]
+
     return {
       symbol,
-      name: suggested?.name ?? '',
-      unit: suggested?.unit ?? '',
+      name: saved?.name ?? suggested?.name ?? '',
+      unit: saved?.unit ?? suggested?.unit ?? '',
+      definition: saved?.definition ?? '',
     }
   })
 }

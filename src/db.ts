@@ -6,6 +6,7 @@ export interface FormulaRecord {
   name: string
   category: string
   latex: string
+  explanation?: string
   expressionJson?: unknown
   variables?: string[]
   variableMetadata?: VariableMetadata[]
