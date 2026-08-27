@@ -16,22 +16,23 @@ export function PracticeExplanation({
   const focusVariable = focusSymbol
     ? metadata.find((entry) => entry.symbol === focusSymbol)
     : undefined
+  const otherMetadata = focusSymbol
+    ? metadata.filter((entry) => entry.symbol !== focusSymbol)
+    : metadata
   const explanation = formula.explanation?.trim() ?? ''
-  const hasVariableDetails = metadata.some(
+  const hasOtherVariableDetails = otherMetadata.some(
     (entry) => entry.name.trim() || entry.unit.trim() || entry.definition.trim(),
   )
+  const variableListLabel = focusSymbol ? 'Other variables' : 'Variables'
 
-  if (!explanation && !hasVariableDetails) {
+  if (!explanation && !focusVariable && !hasOtherVariableDetails) {
     return null
   }
 
   const variableList = (
     <div className="practice-variable-list">
-      {metadata.map((entry) => (
-        <div
-          className={`practice-variable-row${entry.symbol === focusSymbol ? ' practice-variable-row-focus' : ''}`}
-          key={entry.symbol}
-        >
+      {otherMetadata.map((entry) => (
+        <div className="practice-variable-row" key={entry.symbol}>
           <span className="variable-chip">{entry.symbol}</span>
           <div className="practice-variable-copy">
             <div className="practice-variable-heading">
@@ -66,15 +67,15 @@ export function PracticeExplanation({
         </div>
       ) : null}
 
-      {hasVariableDetails ? (
+      {hasOtherVariableDetails ? (
         expanded ? (
           <div className="practice-variables-expanded">
-            <p className="practice-solution-label">Variables</p>
+            <p className="practice-solution-label">{variableListLabel}</p>
             {variableList}
           </div>
         ) : (
           <details className="practice-variables-details">
-            <summary>Variables</summary>
+            <summary>{variableListLabel}</summary>
             {variableList}
           </details>
         )

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { downloadFormulaTrainerBackup } from './backup'
 import { FullRecallPractice } from './components/FullRecallPractice'
 import { db, type FormulaRecord } from './db'
 import {
@@ -305,6 +306,17 @@ export default function App() {
     await refreshFormulas()
   }
 
+  async function exportBackup() {
+    try {
+      const count = await downloadFormulaTrainerBackup()
+      setMessageType('normal')
+      setMessage(`Backup exported with ${count} formula${count === 1 ? '' : 's'}.`)
+    } catch {
+      setMessageType('error')
+      setMessage('The backup could not be exported.')
+    }
+  }
+
   function loadExample() {
     setName('Capacitive reactance')
     setCategory('Electronics')
@@ -467,7 +479,17 @@ export default function App() {
                 <p className="step-label">Formula library</p>
                 <h2 id="library-title">Your formulas</h2>
               </div>
-              <span className="count-badge">{formulas.length}</span>
+              <div className="formula-card-actions">
+                <span className="count-badge">{formulas.length}</span>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => void exportBackup()}
+                  disabled={formulas.length === 0}
+                >
+                  Export backup
+                </button>
+              </div>
             </div>
 
             {message ? (
