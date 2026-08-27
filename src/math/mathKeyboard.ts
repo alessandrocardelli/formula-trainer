@@ -4,7 +4,7 @@ type VirtualKeyboardKeycap =
       latex?: string
       insert?: string
       command?: string
-      width?: number
+      width?: 0.5 | 1 | 1.5 | 2 | 5
       variants?: string[]
     }
 
@@ -19,10 +19,6 @@ type MathVirtualKeyboard = {
   hide: () => void
   layouts: readonly (string | VirtualKeyboardLayout)[] | string
   editToolbar?: string
-}
-
-type WindowWithMathKeyboard = Window & {
-  mathVirtualKeyboard?: MathVirtualKeyboard
 }
 
 const electronicsLayout: VirtualKeyboardLayout = {
@@ -43,7 +39,7 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
     ['\\pi', '\\omega', '\\varphi', 'j', 'e', '\\sqrt{#0}', '#@^{#?}'],
     ['\\sin', '\\cos', '\\tan', '\\ln', '\\log', '_', '[backspace]'],
     [
-      { latex: '\\frac{d\\Box}{d\\Box}', insert: '\\frac{d#?}{d#?}', width: 1.4 },
+      { latex: '\\frac{d\\Box}{d\\Box}', insert: '\\frac{d#?}{d#?}', width: 1.5 },
       '\\Delta',
       '\\theta',
       '\\alpha',
@@ -54,8 +50,8 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
   ],
 }
 
-function keyboard() {
-  return (window as WindowWithMathKeyboard).mathVirtualKeyboard
+function keyboard(): MathVirtualKeyboard | undefined {
+  return (window as unknown as { mathVirtualKeyboard?: MathVirtualKeyboard }).mathVirtualKeyboard
 }
 
 function configureElectronicsKeyboard() {
