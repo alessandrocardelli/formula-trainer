@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import type { FormulaRecord } from '../db'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import type { FormulaRecord, PracticeMode } from '../db'
 import { compareExpressionAnswer } from '../math/compareExpression'
 import { compareFormulaAnswer } from '../math/compareFormula'
 import { hideMathKeyboard, openMathKeyboard } from '../math/mathKeyboard'
 import { buildMissingTermGaps, type MissingTermGap } from '../math/missingTerm'
+import {
+  getPracticeStats,
+  recordPracticeCheck,
+  recordPracticeReveal,
+  type PracticeStats,
+} from '../practiceHistory'
 import { PracticeExplanation } from './PracticeExplanation'
 
 type MathFieldElement = HTMLElement & {
@@ -11,7 +17,6 @@ type MathFieldElement = HTMLElement & {
 }
 
 type PracticeResult = 'correct' | 'incorrect' | 'revealed' | null
-type PracticeMode = 'full-recall' | 'missing-term'
 
 interface FullRecallPracticeProps {
   formulas: FormulaRecord[]
@@ -42,6 +47,9 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   const [answerLatex, setAnswerLatex] = useState('')
   const [result, setResult] = useState<PracticeResult>(null)
   const [error, setError] = useState('')
+  const [stats, setStats] = useState<PracticeStats | null>(null)
+  const [trackingError, setTrackingError] = useState('')
+  const attemptStartedAtRef = useRef(Date.now())
 
   const currentFormula = useMemo(
     () => formulas.find((formula) => formula.id === currentFormulaId) ?? null,
@@ -71,10 +79,77 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     setGapIndex(0)
   }, [currentFormulaId])
 
+  useEffect(() => {
+    attemptStartedAtRef.current = Date.now()
+  }, [currentFormulaId, mode, gapIndex, gapShuffleRevision])
+
+  useEffect(() => {
+    if (!currentFormula) {
+      setStats(null)
+      return
+    }
+
+    let cancelled = false
+    void getPracticeStats(currentFormula.id, mode)
+      .then((nextStats) => {
+        if (!cancelled) {
+          setStats(nextStats)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStats(null)
+          setTrackingError('Practice history could not be loaded.')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentFormula, mode])
+
+  function responseTimeMs() {
+    return Math.max(0, Date.now() - attemptStartedAtRef.current)
+  }
+
+  async function refreshStats(formulaId: number, practiceMode: PracticeMode) {
+    const nextStats = await getPracticeStats(formulaId, practiceMode)
+    if (currentFormulaId === formulaId && mode === practiceMode) {
+      setStats(nextStats)
+    }
+  }
+
+  function persistCheck(formulaId: number, practiceMode: PracticeMode, correct: boolean) {
+    const elapsed = responseTimeMs()
+    void recordPracticeCheck({
+      formulaId,
+      mode: practiceMode,
+      correct,
+      responseTimeMs: elapsed,
+    })
+      .then(() => refreshStats(formulaId, practiceMode))
+      .then(() => setTrackingError(''))
+      .catch(() => setTrackingError('This attempt could not be saved.'))
+  }
+
+  function persistReveal(formulaId: number, practiceMode: PracticeMode) {
+    const elapsed = responseTimeMs()
+    void recordPracticeReveal({
+      formulaId,
+      mode: practiceMode,
+      responseTimeMs: elapsed,
+    })
+      .then(() => refreshStats(formulaId, practiceMode))
+      .then(() => setTrackingError(''))
+      .catch(() => setTrackingError('This reveal could not be saved.'))
+  }
+
   function resetAttempt() {
     setAnswerLatex('')
     setResult(null)
     setError('')
+    setTrackingError('')
+    attemptStartedAtRef.current = Date.now()
   }
 
   function switchMode(nextMode: PracticeMode) {
@@ -128,7 +203,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   function checkFullRecallAnswer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!currentFormula) {
+    if (!currentFormula || result) {
       return
     }
 
@@ -139,15 +214,17 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       return
     }
 
+    const correct = comparison.equivalent === true
     hideMathKeyboard()
     setError('')
-    setResult(comparison.equivalent ? 'correct' : 'incorrect')
+    setResult(correct ? 'correct' : 'incorrect')
+    persistCheck(currentFormula.id, 'full-recall', correct)
   }
 
   function checkMissingTermAnswer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!currentGap) {
+    if (!currentFormula || !currentGap || result) {
       return
     }
 
@@ -158,25 +235,31 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       return
     }
 
+    const correct = comparison.equivalent === true
     hideMathKeyboard()
     setError('')
-    setResult(comparison.equivalent ? 'correct' : 'incorrect')
+    setResult(correct ? 'correct' : 'incorrect')
+    persistCheck(currentFormula.id, 'missing-term', correct)
   }
 
   function revealAnswer() {
-    if (!currentFormula) {
+    if (!currentFormula || result) {
       return
     }
 
     hideMathKeyboard()
     setError('')
     setResult('revealed')
+    persistReveal(currentFormula.id, mode)
   }
 
   function handleAnswerInput(event: FormEvent<HTMLElement>) {
+    if (result) {
+      return
+    }
+
     setAnswerLatex((event.currentTarget as MathFieldElement).value)
     setError('')
-    setResult(null)
   }
 
   function renderFullRecall() {
@@ -206,10 +289,15 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           </label>
 
           <div className="practice-actions">
-            <button className="button button-primary" type="submit">
+            <button className="button button-primary" type="submit" disabled={result !== null}>
               Check answer
             </button>
-            <button className="button button-secondary" type="button" onClick={revealAnswer}>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={revealAnswer}
+              disabled={result !== null}
+            >
               Show answer
             </button>
           </div>
@@ -245,10 +333,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
               read-only
             />
 
-            <PracticeExplanation
-              formula={currentFormula}
-              expanded={result !== 'correct'}
-            />
+            <PracticeExplanation formula={currentFormula} expanded={result !== 'correct'} />
 
             <div className="practice-feedback-actions">
               <button className="button button-secondary" type="button" onClick={resetAttempt}>
@@ -326,10 +411,15 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           </label>
 
           <div className="practice-actions">
-            <button className="button button-primary" type="submit">
+            <button className="button button-primary" type="submit" disabled={result !== null}>
               Check answer
             </button>
-            <button className="button button-secondary" type="button" onClick={revealAnswer}>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={revealAnswer}
+              disabled={result !== null}
+            >
               Show answer
             </button>
           </div>
@@ -432,6 +522,20 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         </div>
         {formulas.length > 0 ? <span className="count-badge">{formulas.length}</span> : null}
       </div>
+
+      {currentFormula && stats && (stats.checks > 0 || stats.reveals > 0) ? (
+        <div className="practice-history-summary" aria-label="Practice history for this formula and mode">
+          <span><strong>{stats.checks}</strong> checks</span>
+          <span><strong>{stats.correct}</strong> correct</span>
+          <span><strong>{stats.incorrect}</strong> wrong</span>
+          <span><strong>{stats.reveals}</strong> revealed</span>
+          {stats.accuracy !== null ? (
+            <span><strong>{Math.round(stats.accuracy * 100)}%</strong> accuracy</span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {trackingError ? <p className="practice-error">{trackingError}</p> : null}
 
       {!currentFormula ? (
         <div className="empty-state">
