@@ -3,7 +3,7 @@ import type { FormulaRecord } from '../db'
 import { compareExpressionAnswer } from '../math/compareExpression'
 import { compareFormulaAnswer } from '../math/compareFormula'
 import { hideMathKeyboard, openMathKeyboard } from '../math/mathKeyboard'
-import { buildMissingTermGaps } from '../math/missingTerm'
+import { buildMissingTermGaps, type MissingTermGap } from '../math/missingTerm'
 
 type MathFieldElement = HTMLElement & {
   value: string
@@ -22,10 +22,22 @@ const modeTitles: Record<PracticeMode, string> = {
   'missing-term': 'Missing term',
 }
 
+function shuffleGaps(gaps: MissingTermGap[]) {
+  const shuffled = [...gaps]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+
+  return shuffled
+}
+
 export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPracticeProps) {
   const [mode, setMode] = useState<PracticeMode>('full-recall')
   const [currentFormulaId, setCurrentFormulaId] = useState<number | null>(null)
   const [gapIndex, setGapIndex] = useState(0)
+  const [gapShuffleRevision, setGapShuffleRevision] = useState(0)
   const [answerLatex, setAnswerLatex] = useState('')
   const [result, setResult] = useState<PracticeResult>(null)
   const [error, setError] = useState('')
@@ -36,8 +48,8 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   )
 
   const missingTermGaps = useMemo(
-    () => (currentFormula ? buildMissingTermGaps(currentFormula) : []),
-    [currentFormula],
+    () => (currentFormula ? shuffleGaps(buildMissingTermGaps(currentFormula)) : []),
+    [currentFormula, gapShuffleRevision],
   )
 
   const currentGap =
@@ -68,6 +80,9 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     hideMathKeyboard()
     setMode(nextMode)
     setGapIndex(0)
+    if (nextMode === 'missing-term') {
+      setGapShuffleRevision((revision) => revision + 1)
+    }
     resetAttempt()
   }
 
@@ -105,6 +120,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     }
 
     setGapIndex(0)
+    setGapShuffleRevision((revision) => revision + 1)
     resetAttempt()
   }
 
@@ -348,8 +364,8 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         <details className="practice-info">
           <summary>How this mode works</summary>
           <p>
-            One variable on the right-hand side is hidden. Enter only the missing term. Different
-            gaps in the same formula are trained as separate challenges.
+            One variable on the right-hand side is hidden. Enter only the missing term. Available
+            gaps are shuffled so the same variable is not always asked first.
           </p>
         </details>
       </div>
