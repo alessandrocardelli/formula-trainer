@@ -25,6 +25,28 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
+.practice-history-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem 0.65rem;
+  margin: -0.2rem 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.practice-history-summary strong {
+  color: #334155;
+}
+
+.practice-actions .button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .missing-term-prompt {
   display: grid;
   justify-items: start;
