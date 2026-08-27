@@ -26,6 +26,8 @@
 
 - [x] Full recall exercise
 - [x] Missing-term exercise
+- [x] Randomized/shuffled missing-term challenge order
+- [ ] Rich explanatory feedback after wrong/revealed answers, using variable metadata and definitions
 - [ ] General symbolic answer equivalence
 - [ ] Solve-for-variable exercise
 - [ ] Numerical exercise generator
