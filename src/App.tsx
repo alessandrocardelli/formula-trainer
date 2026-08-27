@@ -5,6 +5,7 @@ import {
   buildVariableMetadata,
   type VariableMetadata,
 } from './domain/variableMetadata'
+import { hideMathKeyboard, openMathKeyboard } from './math/mathKeyboard'
 import { FORMULA_PARSER_VERSION, parseFormula } from './math/parseFormula'
 
 type MathFieldElement = HTMLElement & {
@@ -12,14 +13,22 @@ type MathFieldElement = HTMLElement & {
 }
 
 type VariableMetadataField = 'name' | 'unit'
+type AppView = 'practice' | 'library' | 'add'
 
 const exampleFormula = String.raw`X_C=\frac{1}{2\pi fC}`
+
+const viewTitles: Record<AppView, string> = {
+  practice: 'Practice',
+  library: 'Library',
+  add: 'Add formula',
+}
 
 function metadataMatches(a?: VariableMetadata[], b?: VariableMetadata[]) {
   return JSON.stringify(a ?? []) === JSON.stringify(b ?? [])
 }
 
 export default function App() {
+  const [activeView, setActiveView] = useState<AppView>('practice')
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [latex, setLatex] = useState('')
@@ -31,6 +40,12 @@ export default function App() {
   const [editName, setEditName] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [editLatex, setEditLatex] = useState('')
+
+  function switchView(view: AppView) {
+    hideMathKeyboard()
+    setActiveView(view)
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+  }
 
   async function refreshFormulas() {
     const records = await db.formulas.orderBy('updatedAt').reverse().toArray()
@@ -122,6 +137,7 @@ export default function App() {
       updatedAt: now,
     })
 
+    hideMathKeyboard()
     setName('')
     setCategory('')
     setLatex('')
@@ -140,6 +156,7 @@ export default function App() {
   }
 
   function cancelEditing() {
+    hideMathKeyboard()
     setEditingId(null)
     setEditName('')
     setEditCategory('')
@@ -247,269 +264,314 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Local-first · offline-ready</p>
-          <h1>Formula Trainer</h1>
-          <p className="hero-copy">
-            Build your own formula library and practise recalling equations from memory. Generated
-            exercises and spaced repetition come next.
-          </p>
-        </div>
-      </header>
+    <>
+      <main className="app-shell">
+        <header className="app-header">
+          <p className="eyebrow">Formula Trainer</p>
+          <h1>{viewTitles[activeView]}</h1>
+        </header>
 
-      <section className="panel" aria-labelledby="add-formula-title">
-        <div className="section-heading">
-          <div>
-            <p className="step-label">Step 1</p>
-            <h2 id="add-formula-title">Add a formula</h2>
+        {activeView === 'practice' ? (
+          <div className="screen-content">
+            <FullRecallPractice formulas={formulas} onAddFormula={() => switchView('add')} />
           </div>
-          <button className="button button-secondary" type="button" onClick={loadExample}>
-            Load example
-          </button>
-        </div>
+        ) : null}
 
-        <form onSubmit={saveFormula} className="formula-form">
-          <label>
-            <span>Name</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. Capacitive reactance"
-              autoComplete="off"
-            />
-          </label>
+        {activeView === 'add' ? (
+          <section className="panel screen-content" aria-labelledby="add-formula-title">
+            <div className="section-heading compact-heading">
+              <div>
+                <p className="step-label">Formula library</p>
+                <h2 id="add-formula-title">New formula</h2>
+              </div>
+              <button className="button button-secondary" type="button" onClick={loadExample}>
+                Load example
+              </button>
+            </div>
 
-          <label>
-            <span>Category</span>
-            <input
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              placeholder="e.g. Electronics"
-              autoComplete="off"
-            />
-          </label>
+            <form onSubmit={saveFormula} className="formula-form">
+              <label>
+                <span>Name</span>
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="e.g. Capacitive reactance"
+                  autoComplete="off"
+                />
+              </label>
 
-          <label>
-            <span>Formula</span>
-            <math-field
-              className="formula-editor"
-              value={latex}
-              virtual-keyboard-mode="onfocus"
-              onInput={(event) => setLatex((event.currentTarget as MathFieldElement).value)}
-              aria-label="Formula editor"
-            />
-          </label>
+              <label>
+                <span>Category</span>
+                <input
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  placeholder="e.g. Electronics"
+                  autoComplete="off"
+                />
+              </label>
 
-          <div className="form-actions">
-            <button className="button button-primary" type="submit">
-              Save formula
-            </button>
-            <span
-              className={`status-message${messageType === 'error' ? ' status-message-error' : ''}`}
-              aria-live="polite"
-            >
-              {message}
-            </span>
-          </div>
-        </form>
-      </section>
+              <label>
+                <span>Formula</span>
+                <math-field
+                  className="formula-editor"
+                  value={latex}
+                  math-virtual-keyboard-policy="manual"
+                  onClick={(event) => openMathKeyboard(event.currentTarget)}
+                  onInput={(event) => setLatex((event.currentTarget as MathFieldElement).value)}
+                  aria-label="Formula editor"
+                />
+              </label>
 
-      <FullRecallPractice formulas={formulas} />
-
-      <section className="panel" aria-labelledby="library-title">
-        <div className="section-heading">
-          <div>
-            <p className="step-label">Library</p>
-            <h2 id="library-title">Your formulas</h2>
-          </div>
-          <span className="count-badge">{formulas.length}</span>
-        </div>
-
-        {formulas.length === 0 ? (
-          <div className="empty-state">
-            <p>No formulas yet.</p>
-            <span>Add one above or load the example to test the editor.</span>
-          </div>
-        ) : (
-          <div className="formula-list">
-            {formulas.map((formula) => {
-              const metadata = buildVariableMetadata(
-                formula.variables ?? [],
-                formula.variableMetadata,
-              )
-              const isEditing = editingId === formula.id
-
-              return (
-                <article
-                  className={`formula-card${isEditing ? ' formula-card-editing' : ''}`}
-                  key={formula.id}
+              <div className="form-actions">
+                <button className="button button-primary" type="submit">
+                  Save formula
+                </button>
+                <span
+                  className={`status-message${messageType === 'error' ? ' status-message-error' : ''}`}
+                  aria-live="polite"
                 >
-                  {isEditing ? (
-                    <form
-                      className="formula-edit-form"
-                      onSubmit={(event) => void saveEditedFormula(event, formula)}
+                  {message}
+                </span>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
+        {activeView === 'library' ? (
+          <section className="panel screen-content" aria-labelledby="library-title">
+            <div className="section-heading compact-heading">
+              <div>
+                <p className="step-label">Formula library</p>
+                <h2 id="library-title">Your formulas</h2>
+              </div>
+              <span className="count-badge">{formulas.length}</span>
+            </div>
+
+            {message ? (
+              <p
+                className={`library-status${messageType === 'error' ? ' status-message-error' : ''}`}
+                aria-live="polite"
+              >
+                {message}
+              </p>
+            ) : null}
+
+            {formulas.length === 0 ? (
+              <div className="empty-state">
+                <p>No formulas yet.</p>
+                <span>Add one to start building your library.</span>
+                <button className="button button-primary empty-state-action" type="button" onClick={() => switchView('add')}>
+                  Add formula
+                </button>
+              </div>
+            ) : (
+              <div className="formula-list">
+                {formulas.map((formula) => {
+                  const metadata = buildVariableMetadata(
+                    formula.variables ?? [],
+                    formula.variableMetadata,
+                  )
+                  const isEditing = editingId === formula.id
+
+                  return (
+                    <article
+                      className={`formula-card${isEditing ? ' formula-card-editing' : ''}`}
+                      key={formula.id}
                     >
-                      <div className="formula-edit-grid">
-                        <label>
-                          <span>Name</span>
-                          <input
-                            value={editName}
-                            onChange={(event) => setEditName(event.target.value)}
-                            autoComplete="off"
-                          />
-                        </label>
-
-                        <label>
-                          <span>Category</span>
-                          <input
-                            value={editCategory}
-                            onChange={(event) => setEditCategory(event.target.value)}
-                            autoComplete="off"
-                          />
-                        </label>
-                      </div>
-
-                      <label>
-                        <span>Formula</span>
-                        <math-field
-                          className="formula-editor formula-edit-math"
-                          value={editLatex}
-                          virtual-keyboard-mode="onfocus"
-                          onInput={(event) =>
-                            setEditLatex((event.currentTarget as MathFieldElement).value)
-                          }
-                          aria-label={`Edit formula for ${formula.name}`}
-                        />
-                      </label>
-
-                      <p className="edit-help">
-                        Existing variable names and units are kept when the same symbols remain in
-                        the edited equation.
-                      </p>
-
-                      <div className="formula-edit-actions">
-                        <button className="button button-primary" type="submit">
-                          Save changes
-                        </button>
-                        <button
-                          className="button button-secondary"
-                          type="button"
-                          onClick={cancelEditing}
+                      {isEditing ? (
+                        <form
+                          className="formula-edit-form"
+                          onSubmit={(event) => void saveEditedFormula(event, formula)}
                         >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="formula-card-copy">
-                        <span className="category-chip">{formula.category}</span>
-                        <h3>{formula.name}</h3>
-                        <math-field className="formula-preview" value={formula.latex} read-only />
+                          <div className="formula-edit-grid">
+                            <label>
+                              <span>Name</span>
+                              <input
+                                value={editName}
+                                onChange={(event) => setEditName(event.target.value)}
+                                autoComplete="off"
+                              />
+                            </label>
 
-                        {metadata.length > 0 ? (
-                          <div className="variable-summary-list" aria-label="Variable details">
-                            {metadata.map((entry) => (
-                              <div className="variable-summary-row" key={entry.symbol}>
-                                <span className="variable-chip">{entry.symbol}</span>
-                                <span className="variable-description">
-                                  {entry.name || 'No description'}
-                                  {entry.unit ? (
-                                    <span className="variable-unit"> · {entry.unit}</span>
-                                  ) : null}
-                                </span>
-                              </div>
-                            ))}
+                            <label>
+                              <span>Category</span>
+                              <input
+                                value={editCategory}
+                                onChange={(event) => setEditCategory(event.target.value)}
+                                autoComplete="off"
+                              />
+                            </label>
                           </div>
-                        ) : null}
 
-                        {metadata.length > 0 ? (
-                          <details className="variable-details">
-                            <summary>Edit variable details</summary>
-                            <div className="variable-editor-list">
-                              {metadata.map((entry) => (
-                                <div className="variable-editor-row" key={entry.symbol}>
-                                  <div className="variable-editor-symbol">{entry.symbol}</div>
-                                  <label>
-                                    <span>Name</span>
-                                    <input
-                                      value={entry.name}
-                                      onChange={(event) =>
-                                        updateVariableMetadata(
-                                          formula.id,
-                                          entry.symbol,
-                                          'name',
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="e.g. Electric current"
-                                    />
-                                  </label>
-                                  <label>
-                                    <span>Unit</span>
-                                    <input
-                                      value={entry.unit}
-                                      onChange={(event) =>
-                                        updateVariableMetadata(
-                                          formula.id,
-                                          entry.symbol,
-                                          'unit',
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="e.g. A"
-                                    />
-                                  </label>
-                                </div>
-                              ))}
+                          <label>
+                            <span>Formula</span>
+                            <math-field
+                              className="formula-editor formula-edit-math"
+                              value={editLatex}
+                              math-virtual-keyboard-policy="manual"
+                              onClick={(event) => openMathKeyboard(event.currentTarget)}
+                              onInput={(event) =>
+                                setEditLatex((event.currentTarget as MathFieldElement).value)
+                              }
+                              aria-label={`Edit formula for ${formula.name}`}
+                            />
+                          </label>
 
+                          <p className="edit-help">
+                            Existing variable names and units are kept when the same symbols remain.
+                          </p>
+
+                          <div className="formula-edit-actions">
+                            <button className="button button-primary" type="submit">
+                              Save changes
+                            </button>
+                            <button
+                              className="button button-secondary"
+                              type="button"
+                              onClick={cancelEditing}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="formula-card-header">
+                            <div className="formula-card-copy">
+                              <span className="category-chip">{formula.category}</span>
+                              <h3>{formula.name}</h3>
+                              <math-field className="formula-preview" value={formula.latex} read-only />
+                            </div>
+
+                            <div className="formula-card-actions">
                               <button
                                 type="button"
-                                className="button button-secondary variable-save-button"
-                                onClick={() => void saveVariableMetadata(formula)}
+                                className="edit-button"
+                                onClick={() => startEditing(formula)}
                               >
-                                Save variable details
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-button"
+                                onClick={() => void deleteFormula(formula.id)}
+                                aria-label={`Delete ${formula.name}`}
+                              >
+                                Delete
                               </button>
                             </div>
-                          </details>
-                        ) : null}
+                          </div>
 
-                        {formula.variables?.some((variable) => /^d[A-Za-z]$/.test(variable)) ? (
-                          <details>
-                            <summary>Parser debug</summary>
-                            <p>LaTeX: {formula.latex}</p>
-                            <pre>{JSON.stringify(formula.expressionJson)}</pre>
-                          </details>
-                        ) : null}
-                      </div>
+                          <details className="formula-more">
+                            <summary>Details & variables</summary>
 
-                      <div className="formula-card-actions">
-                        <button
-                          type="button"
-                          className="edit-button"
-                          onClick={() => startEditing(formula)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="delete-button"
-                          onClick={() => void deleteFormula(formula.id)}
-                          aria-label={`Delete ${formula.name}`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </section>
-    </main>
+                            {metadata.length > 0 ? (
+                              <div className="variable-summary-list" aria-label="Variable details">
+                                {metadata.map((entry) => (
+                                  <div className="variable-summary-row" key={entry.symbol}>
+                                    <span className="variable-chip">{entry.symbol}</span>
+                                    <span className="variable-description">
+                                      {entry.name || 'No description'}
+                                      {entry.unit ? (
+                                        <span className="variable-unit"> · {entry.unit}</span>
+                                      ) : null}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            {metadata.length > 0 ? (
+                              <details className="variable-details">
+                                <summary>Edit variable details</summary>
+                                <div className="variable-editor-list">
+                                  {metadata.map((entry) => (
+                                    <div className="variable-editor-row" key={entry.symbol}>
+                                      <div className="variable-editor-symbol">{entry.symbol}</div>
+                                      <label>
+                                        <span>Name</span>
+                                        <input
+                                          value={entry.name}
+                                          onChange={(event) =>
+                                            updateVariableMetadata(
+                                              formula.id,
+                                              entry.symbol,
+                                              'name',
+                                              event.target.value,
+                                            )
+                                          }
+                                          placeholder="e.g. Electric current"
+                                        />
+                                      </label>
+                                      <label>
+                                        <span>Unit</span>
+                                        <input
+                                          value={entry.unit}
+                                          onChange={(event) =>
+                                            updateVariableMetadata(
+                                              formula.id,
+                                              entry.symbol,
+                                              'unit',
+                                              event.target.value,
+                                            )
+                                          }
+                                          placeholder="e.g. A"
+                                        />
+                                      </label>
+                                    </div>
+                                  ))}
+
+                                  <button
+                                    type="button"
+                                    className="button button-secondary variable-save-button"
+                                    onClick={() => void saveVariableMetadata(formula)}
+                                  >
+                                    Save variable details
+                                  </button>
+                                </div>
+                              </details>
+                            ) : null}
+                          </details>
+                        </>
+                      )}
+                    </article>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        ) : null}
+      </main>
+
+      <nav className="bottom-nav" aria-label="Main navigation">
+        <button
+          type="button"
+          className={`bottom-nav-item${activeView === 'practice' ? ' bottom-nav-item-active' : ''}`}
+          aria-current={activeView === 'practice' ? 'page' : undefined}
+          onClick={() => switchView('practice')}
+        >
+          <span className="bottom-nav-icon" aria-hidden="true">▶</span>
+          <span>Practice</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-item${activeView === 'library' ? ' bottom-nav-item-active' : ''}`}
+          aria-current={activeView === 'library' ? 'page' : undefined}
+          onClick={() => switchView('library')}
+        >
+          <span className="bottom-nav-icon" aria-hidden="true">≡</span>
+          <span>Library</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-item${activeView === 'add' ? ' bottom-nav-item-active' : ''}`}
+          aria-current={activeView === 'add' ? 'page' : undefined}
+          onClick={() => switchView('add')}
+        >
+          <span className="bottom-nav-icon" aria-hidden="true">＋</span>
+          <span>Add</span>
+        </button>
+      </nav>
+    </>
   )
 }
