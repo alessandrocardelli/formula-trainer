@@ -11,7 +11,7 @@
 - [x] Mobile-first Practice / Library / Add navigation
 - [x] Explicit mobile math-keyboard control
 - [x] Continuous-integration build passing
-- [ ] App menu/settings entry point for secondary actions and preferences
+- [x] App menu/settings entry point for secondary actions and preferences
 - [ ] Electronics-focused MathLive keyboard profiles with compact context-specific layouts
 
 ## Phase 1 — Formula model
@@ -44,7 +44,7 @@
 - [x] Due-first review queue
 - [ ] Dedicated Statistics view with overall, per-mode, and per-formula progress
 - [ ] Weakness/progress statistics and trends
-- [ ] Reset learning data (practice history, statistics, and FSRS state) without deleting formulas
+- [x] Reset learning data (practice history, statistics, and FSRS state) without deleting formulas
 - [ ] Optional selective reset per formula and/or practice mode
 
 ## Phase 4 — Advanced exercises
