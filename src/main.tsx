@@ -7,6 +7,7 @@ import './styles.css'
 import './practiceModes.css'
 import './metadataFlow.css'
 import './backupControls.css'
+import './appMenu.css'
 import './pwaUpdatePrompt.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
