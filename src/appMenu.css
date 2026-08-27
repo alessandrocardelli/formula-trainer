@@ -1,0 +1,163 @@
+.app-menu-trigger {
+  position: fixed;
+  z-index: 65;
+  top: max(0.8rem, env(safe-area-inset-top));
+  right: max(0.7rem, env(safe-area-inset-right));
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.94);
+  color: #475569;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.app-menu-trigger:hover,
+.app-menu-trigger:focus-visible {
+  color: #111827;
+  border-color: #cbd5e1;
+}
+
+.app-menu-overlay {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(2px);
+}
+
+.app-menu-sheet {
+  width: min(100%, 560px);
+  max-height: min(82vh, 680px);
+  overflow-y: auto;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  border: 1px solid #e2e8f0;
+  border-radius: 1.15rem;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+}
+
+.app-menu-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.app-menu-heading h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.app-menu-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.7rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.settings-section {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+}
+
+.settings-section-label {
+  margin: 0 0 0.2rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.settings-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.settings-copy,
+.settings-confirmation p,
+.settings-note {
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.settings-copy {
+  margin: 0;
+}
+
+.settings-danger-button {
+  justify-self: start;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.settings-danger-button:hover,
+.settings-danger-button:focus-visible {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.settings-confirmation {
+  padding: 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.8rem;
+  background: #fff;
+}
+
+.settings-confirmation strong {
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.settings-confirmation p {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.settings-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.settings-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.8rem;
+}
+
+.settings-note {
+  margin: 0.9rem 0 0;
+}
+
+@media (min-width: 640px) {
+  .app-menu-overlay {
+    align-items: center;
+  }
+}
