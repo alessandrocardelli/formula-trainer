@@ -1,6 +1,6 @@
 # Formula Trainer
 
-A local-first PWA for learning, recalling, manipulating, and applying mathematical formulas through active practice and spaced repetition.
+A local-first PWA for learning, recalling, manipulating, and applying mathematical and electronics formulas through active practice and spaced repetition.
 
 ## Goal
 
@@ -16,22 +16,48 @@ Formula Trainer is not intended to be a traditional flashcard app. The long-term
 
 ## Current state
 
-The first scaffold is in place. The app currently provides:
+The project has moved beyond the initial scaffold and now includes a complete first learning loop:
 
-- React + TypeScript + Vite;
-- installable PWA foundation;
-- MathLive visual formula editor;
-- local formula storage with IndexedDB/Dexie;
-- a simple personal formula library;
-- offline-first architecture with no account or backend required.
+- React + TypeScript + Vite PWA;
+- local IndexedDB/Dexie formula storage;
+- MathLive formula entry with a compact electronics-focused virtual keyboard;
+- symbolic parsing and validation through CortexJS Compute Engine;
+- automatic variable detection with editable name, unit and definition metadata;
+- optional formula explanations;
+- formula editing and deletion;
+- Full recall practice;
+- Missing term practice with shuffled gaps;
+- explanatory feedback for correct, incorrect and revealed answers;
+- persistent practice history including response time;
+- FSRS scheduling independently for each formula and practice mode;
+- due-first review queue;
+- JSON backup/export and validated non-destructive import;
+- app update prompt for new PWA versions;
+- settings/menu entry point and learning-history reset without deleting formulas;
+- GitHub Actions CI and GitHub Pages deployment.
 
-All user data is intended to remain local by default. Backup/import can be added without requiring a server.
+The app remains local-first: no account, backend or paid API is required for the core experience.
+
+## Current development focus
+
+The project is currently in a core hardening and usability phase.
+
+The immediate order is:
+
+1. Test and refine the electronics keyboard and recent MathLive menu fixes on the target Android device.
+2. Build a dedicated Statistics view from the practice-history and FSRS data already stored.
+3. Add Library search/filter for larger formula collections.
+4. Add selective learning-data reset.
+5. Introduce regression tests for parsing, symbolic comparison, Missing term, backup and FSRS behavior.
+6. Then move to Solve-for-variable and numerical exercises.
+
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the detailed current status, design decisions, known limitations and development order.
 
 ## Preview deployment
 
-The current development build is configured for deployment to GitHub Pages from the `main` branch using GitHub Actions.
+The development build is deployed to GitHub Pages from the `main` branch using GitHub Actions.
 
-## Planned stack
+## Stack
 
 - **React + TypeScript** — interface and application logic
 - **MathLive** — visual mathematical input
@@ -56,18 +82,7 @@ npm run build
 npm run preview
 ```
 
-## MVP roadmap
-
-1. Personal formula library
-2. Parse and validate formulas symbolically
-3. Recall exercise
-4. Missing-term exercise
-5. Solve-for-variable exercise
-6. Numerical exercise generator
-7. Per-exercise performance tracking
-8. FSRS scheduling
-9. Backup/export and import
-10. GitHub Pages deployment
+The current CI workflow installs dependencies and runs the production build. Automated tests are planned but are not yet part of CI.
 
 ## License
 
