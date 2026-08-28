@@ -21,6 +21,10 @@ type MathVirtualKeyboard = {
   editToolbar?: string
 }
 
+type EditableMathField = HTMLElement & {
+  menuItems?: readonly unknown[]
+}
+
 const electronicsLayout: VirtualKeyboardLayout = {
   label: 'Electronics',
   tooltip: 'Common electronics formula keys',
@@ -65,7 +69,12 @@ function configureElectronicsKeyboard() {
   virtualKeyboard.editToolbar = 'none'
 }
 
+function disableMathFieldContextMenu(mathfield: HTMLElement) {
+  ;(mathfield as EditableMathField).menuItems = []
+}
+
 export function openMathKeyboard(mathfield: HTMLElement) {
+  disableMathFieldContextMenu(mathfield)
   configureElectronicsKeyboard()
   keyboard()?.show()
 
