@@ -1,6 +1,6 @@
 # Formula Trainer roadmap
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-08-28_
 
 ## Product direction
 
@@ -41,7 +41,26 @@ The app currently supports:
 - app update prompt for new PWA versions;
 - app menu/settings entry point;
 - reset of learning history and FSRS state without deleting formulas;
-- compact electronics-focused MathLive keyboard with a general alphabetic fallback and an advanced layer.
+- compact electronics-focused MathLive keyboard with a general alphabetic fallback and an advanced layer;
+- MathLive context-menu and menu-toggle suppression for the custom keyboard experience;
+- GitHub Actions CI build and GitHub Pages deployment on `main`.
+
+## Current development status
+
+The first complete learning loop is now implemented: formula entry and metadata, symbolic validation, two active-practice modes, explanatory feedback, persistent performance history, FSRS scheduling and backup/restore are all working in the codebase.
+
+The project is currently in a **core hardening and usability phase**, not an initial scaffold phase.
+
+Immediate focus:
+
+1. Validate the electronics keyboard and recent MathLive menu fixes on the target Android device in Add, Full recall and Missing term.
+2. If that mobile test is satisfactory, consider the keyboard work complete for now rather than continuing to optimize it theoretically.
+3. Start the dedicated Statistics view using the practice-history and FSRS data already being stored.
+4. Improve Library scalability with search/filter once Statistics is in place.
+5. Add selective learning-data reset and then regression tests around parser, comparison, Missing term, backup and FSRS behavior.
+6. Only after those foundations are stable, move to Solve-for-variable and numerical exercises.
+
+As of the latest documented state on 2026-08-28, the latest MathLive keyboard fix on `main` completed both the CI workflow and GitHub Pages deployment successfully. The current CI verifies dependency installation and a production build; automated test execution is not yet part of CI because the test suite still needs to be introduced.
 
 ---
 
@@ -53,6 +72,8 @@ The app currently supports:
 - [x] Keep a full alphabetic layout available so arbitrary formula symbols remain possible.
 - [x] Keep less-common AC/calculus symbols in a separate Advanced layout.
 - [x] Reduce virtual-keyboard height on mobile.
+- [x] Disable the MathLive field context menu for the custom keyboard flow.
+- [x] Hide the MathLive menu-toggle UI that conflicted with the app's intended mobile interaction.
 - [ ] Test the new layout on the target Android phone in Add, Full recall and Missing term.
 - [ ] Adjust key order, key size and direct-access variables based on real use rather than assumptions.
 - [ ] Consider different keyboard profiles per exercise type:
@@ -361,7 +382,7 @@ These items should be addressed incrementally rather than waiting for a large cl
 
 ## Suggested development order after the current session
 
-1. Test/refine electronics keyboard on Android.
+1. Test/refine electronics keyboard and recent MathLive menu fixes on Android.
 2. Build the dedicated Statistics view.
 3. Add Library search/filter for larger formula sets.
 4. Add selective learning-data reset.
