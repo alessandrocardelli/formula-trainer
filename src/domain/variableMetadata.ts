@@ -1,3 +1,5 @@
+import { getReusableVariableMetadata } from './variableMetadataReuse'
+
 export interface VariableMetadata {
   symbol: string
   name: string
@@ -34,12 +36,13 @@ export function buildVariableMetadata(
   return variables.map((symbol) => {
     const saved = existingBySymbol.get(symbol)
     const suggested = commonVariableMetadata[symbol]
+    const reusable = saved ? undefined : getReusableVariableMetadata(symbol)
 
     return {
       symbol,
-      name: saved?.name ?? suggested?.name ?? '',
-      unit: saved?.unit ?? suggested?.unit ?? '',
-      definition: saved?.definition ?? '',
+      name: saved?.name ?? reusable?.name ?? suggested?.name ?? '',
+      unit: saved?.unit ?? reusable?.unit ?? suggested?.unit ?? '',
+      definition: saved?.definition ?? reusable?.definition ?? '',
     }
   })
 }
