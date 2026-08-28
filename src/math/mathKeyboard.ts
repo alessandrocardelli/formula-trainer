@@ -28,25 +28,26 @@ const electronicsLayout: VirtualKeyboardLayout = {
     ['7', '8', '9', '+', '-', '=', '[backspace]'],
     ['4', '5', '6', '\\times', '\\frac{#@}{#?}', '(', ')'],
     ['1', '2', '3', 'V', 'I', 'R', 'P'],
-    ['0', '.', 'C', 'L', 'f', 'q', 't'],
+    ['0', '.', 'C', 'L', 'f', '#@_{#?}', '#@^{#?}'],
   ],
 }
 
 const advancedElectronicsLayout: VirtualKeyboardLayout = {
   label: 'Advanced',
-  tooltip: 'AC, calculus and advanced symbols',
+  tooltip: 'AC, calculus and advanced electronics symbols',
   rows: [
-    ['\\pi', '\\omega', '\\varphi', 'j', 'e', '\\sqrt{#0}', '#@^{#?}'],
-    ['\\sin', '\\cos', '\\tan', '\\ln', '\\log', '_', '[backspace]'],
+    ['\\pi', '\\omega', '\\varphi', '\\theta', 'j', 'Z', 'X'],
+    ['\\sqrt{#0}', '\\sin', '\\cos', '\\tan', '\\ln', '\\log', 'e^{#?}'],
     [
+      '\\sum',
+      '\\int',
       { latex: '\\frac{d\\Box}{d\\Box}', insert: '\\frac{d#?}{d#?}', width: 1.5 },
       '\\Delta',
-      '\\theta',
-      '\\alpha',
-      '\\beta',
-      '\\mu',
+      '\\tau',
       '\\varepsilon',
+      '\\mu',
     ],
+    ['\\rho', '\\alpha', '\\beta', '\\lambda', '\\approx', '\\infty', '[backspace]'],
   ],
 }
 
