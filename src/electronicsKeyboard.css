@@ -14,6 +14,10 @@ body {
   --keyboard-row-padding-right: 2px;
 }
 
+math-field::part(menu-toggle) {
+  display: none;
+}
+
 @media (min-width: 700px) {
   body {
     --keycap-height: 42px;
