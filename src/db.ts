@@ -1,5 +1,9 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { VariableMetadata } from './domain/variableMetadata'
+import {
+  forgetFormulaVariableMetadata,
+  rememberFormulaVariableMetadata,
+} from './domain/variableMetadataReuse'
 
 export type PracticeMode = 'full-recall' | 'missing-term'
 export type PracticeLogAction = 'check' | 'reveal'
@@ -66,6 +70,18 @@ class FormulaTrainerDB extends Dexie {
       formulas: '++id, name, category, updatedAt',
       practiceLogs: '++id, formulaId, mode, action, createdAt, [formulaId+mode]',
       reviewCards: '++id, &[formulaId+mode], formulaId, mode, due, updatedAt',
+    })
+
+    this.formulas.hook('reading', (formula) => {
+      if (formula) {
+        rememberFormulaVariableMetadata(formula.id, formula.variableMetadata)
+      }
+
+      return formula
+    })
+
+    this.formulas.hook('deleting', (formulaId) => {
+      forgetFormulaVariableMetadata(formulaId)
     })
   }
 }
