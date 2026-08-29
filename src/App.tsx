@@ -4,6 +4,7 @@ import {
   importFormulaTrainerBackup,
 } from './backup'
 import { FullRecallPractice } from './components/FullRecallPractice'
+import { VariableSymbol } from './components/VariableSymbol'
 import { db, type FormulaRecord } from './db'
 import {
   buildVariableMetadata,
@@ -427,7 +428,7 @@ export default function App() {
                   <div className="draft-variable-list">
                     {draftVariableMetadata.map((entry) => (
                       <div className="draft-variable-card" key={entry.symbol}>
-                        <div className="draft-variable-symbol">{entry.symbol}</div>
+                        <VariableSymbol className="draft-variable-symbol" symbol={entry.symbol} />
                         <div className="draft-variable-fields">
                           <label>
                             <span>Name</span>
@@ -668,7 +669,7 @@ export default function App() {
                               <div className="variable-summary-list" aria-label="Variable details">
                                 {metadata.map((entry) => (
                                   <div className="variable-summary-row" key={entry.symbol}>
-                                    <span className="variable-chip">{entry.symbol}</span>
+                                    <VariableSymbol className="variable-chip" symbol={entry.symbol} />
                                     <span className="variable-description">
                                       {entry.name || 'No description'}
                                       {entry.unit ? (
@@ -689,7 +690,7 @@ export default function App() {
                                 <div className="variable-editor-list">
                                   {metadata.map((entry) => (
                                     <div className="variable-editor-row variable-editor-row-rich" key={entry.symbol}>
-                                      <div className="variable-editor-symbol">{entry.symbol}</div>
+                                      <VariableSymbol className="variable-editor-symbol" symbol={entry.symbol} />
                                       <label>
                                         <span>Name</span>
                                         <input

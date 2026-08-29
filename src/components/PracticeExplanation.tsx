@@ -1,5 +1,6 @@
 import type { FormulaRecord } from '../db'
 import { buildVariableMetadata } from '../domain/variableMetadata'
+import { VariableSymbol } from './VariableSymbol'
 
 interface PracticeExplanationProps {
   formula: FormulaRecord
@@ -33,10 +34,10 @@ export function PracticeExplanation({
     <div className="practice-variable-list">
       {otherMetadata.map((entry) => (
         <div className="practice-variable-row" key={entry.symbol}>
-          <span className="variable-chip">{entry.symbol}</span>
+          <VariableSymbol className="variable-chip" symbol={entry.symbol} />
           <div className="practice-variable-copy">
             <div className="practice-variable-heading">
-              <strong>{entry.name || entry.symbol}</strong>
+              <strong>{entry.name || <VariableSymbol symbol={entry.symbol} />}</strong>
               {entry.unit ? <span>{entry.unit}</span> : null}
             </div>
             {entry.definition ? <p>{entry.definition}</p> : null}
@@ -52,8 +53,8 @@ export function PracticeExplanation({
         <div className="practice-focus-variable">
           <p className="practice-solution-label">This variable</p>
           <div className="practice-variable-heading practice-focus-heading">
-            <span className="variable-chip">{focusVariable.symbol}</span>
-            <strong>{focusVariable.name || focusVariable.symbol}</strong>
+            <VariableSymbol className="variable-chip" symbol={focusVariable.symbol} />
+            <strong>{focusVariable.name || <VariableSymbol symbol={focusVariable.symbol} />}</strong>
             {focusVariable.unit ? <span>{focusVariable.unit}</span> : null}
           </div>
           {focusVariable.definition ? <p>{focusVariable.definition}</p> : null}
