@@ -25,6 +25,86 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
+.practice-category-filter {
+  margin: -0.2rem 0 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.78rem;
+  background: #f8fafc;
+}
+
+.practice-category-filter > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 750;
+  list-style: none;
+}
+
+.practice-category-filter > summary::-webkit-details-marker {
+  display: none;
+}
+
+.practice-category-filter > summary::before {
+  content: '▸';
+  flex: none;
+  color: #94a3b8;
+  transition: transform 120ms ease;
+}
+
+.practice-category-filter[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.practice-category-filter-summary {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: #64748b;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.practice-category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  padding: 0 0.7rem 0.65rem;
+}
+
+.practice-category-button {
+  min-height: 34px;
+  max-width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.practice-category-button-active {
+  border-color: #a5b4fc;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.practice-category-count {
+  margin: 0;
+  padding: 0 0.7rem 0.7rem;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 .review-queue-summary,
 .practice-history-summary {
   display: flex;

@@ -74,11 +74,24 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   const [stats, setStats] = useState<PracticeStats | null>(null)
   const [queueSummary, setQueueSummary] = useState<ReviewQueueSummary | null>(null)
   const [trackingError, setTrackingError] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<string[] | null>(null)
   const attemptStartedAtRef = useRef(Date.now())
 
+  const categories = useMemo(
+    () => [...new Set(formulas.map((formula) => formula.category))],
+    [formulas],
+  )
+
+  const studyFormulas = useMemo(
+    () => selectedCategories === null
+      ? formulas
+      : formulas.filter((formula) => selectedCategories.includes(formula.category)),
+    [formulas, selectedCategories],
+  )
+
   const currentFormula = useMemo(
-    () => formulas.find((formula) => formula.id === currentFormulaId) ?? null,
-    [formulas, currentFormulaId],
+    () => studyFormulas.find((formula) => formula.id === currentFormulaId) ?? null,
+    [studyFormulas, currentFormulaId],
   )
 
   const missingTermGaps = useMemo(
@@ -90,14 +103,31 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     missingTermGaps.length > 0 ? missingTermGaps[gapIndex % missingTermGaps.length] : null
 
   useEffect(() => {
-    if (formulas.length === 0) {
+    if (selectedCategories === null) {
+      return
+    }
+
+    const availableCategories = selectedCategories.filter((category) => categories.includes(category))
+
+    if (availableCategories.length === categories.length && categories.length > 0) {
+      setSelectedCategories(null)
+      return
+    }
+
+    if (availableCategories.length !== selectedCategories.length) {
+      setSelectedCategories(availableCategories)
+    }
+  }, [categories, selectedCategories])
+
+  useEffect(() => {
+    if (studyFormulas.length === 0) {
       setCurrentFormulaId(null)
       setQueueSummary(null)
       return
     }
 
     let cancelled = false
-    const formulaIds = formulas.map((formula) => formula.id)
+    const formulaIds = studyFormulas.map((formula) => formula.id)
 
     void getNextReview(formulaIds, mode)
       .then((nextReview) => {
@@ -107,7 +137,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       })
       .catch(() => {
         if (!cancelled) {
-          setCurrentFormulaId(formulas[0].id)
+          setCurrentFormulaId(studyFormulas[0].id)
           setTrackingError('The review queue could not be loaded.')
         }
       })
@@ -115,7 +145,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     return () => {
       cancelled = true
     }
-  }, [formulas, mode])
+  }, [studyFormulas, mode])
 
   useEffect(() => {
     setGapIndex(0)
@@ -151,13 +181,13 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
   }, [currentFormula, mode])
 
   useEffect(() => {
-    if (formulas.length === 0) {
+    if (studyFormulas.length === 0) {
       setQueueSummary(null)
       return
     }
 
     let cancelled = false
-    const formulaIds = formulas.map((formula) => formula.id)
+    const formulaIds = studyFormulas.map((formula) => formula.id)
     void getReviewQueueSummary(formulaIds, mode)
       .then((summary) => {
         if (!cancelled) {
@@ -174,7 +204,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     return () => {
       cancelled = true
     }
-  }, [formulas, mode])
+  }, [studyFormulas, mode])
 
   function responseTimeMs() {
     return Math.max(0, Date.now() - attemptStartedAtRef.current)
@@ -189,7 +219,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
 
   async function refreshQueue(practiceMode: PracticeMode) {
     const summary = await getReviewQueueSummary(
-      formulas.map((formula) => formula.id),
+      studyFormulas.map((formula) => formula.id),
       practiceMode,
     )
     if (mode === practiceMode) {
@@ -246,8 +276,32 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
     resetAttempt()
   }
 
+  function studyAllCategories() {
+    hideMathKeyboard()
+    setSelectedCategories(null)
+    setGapIndex(0)
+    resetAttempt()
+  }
+
+  function toggleStudyCategory(category: string) {
+    hideMathKeyboard()
+    setSelectedCategories((current) => {
+      if (current === null) {
+        return [category]
+      }
+
+      const next = current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category]
+
+      return next.length === categories.length ? null : next
+    })
+    setGapIndex(0)
+    resetAttempt()
+  }
+
   async function goToNextFormula() {
-    if (!currentFormula || formulas.length === 0) {
+    if (!currentFormula || studyFormulas.length === 0) {
       return
     }
 
@@ -255,7 +309,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
 
     try {
       const nextReview = await getNextReview(
-        formulas.map((formula) => formula.id),
+        studyFormulas.map((formula) => formula.id),
         mode,
         currentFormula.id,
       )
@@ -264,9 +318,9 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         setCurrentFormulaId(nextReview.formulaId)
       }
     } catch {
-      const currentIndex = formulas.findIndex((formula) => formula.id === currentFormula.id)
-      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % formulas.length
-      setCurrentFormulaId(formulas[nextIndex].id)
+      const currentIndex = studyFormulas.findIndex((formula) => formula.id === currentFormula.id)
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % studyFormulas.length
+      setCurrentFormulaId(studyFormulas[nextIndex].id)
       setTrackingError('The review queue could not choose the next formula.')
     }
 
@@ -282,7 +336,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
       return
     }
 
-    if (formulas.length > 1) {
+    if (studyFormulas.length > 1) {
       void goToNextFormula()
       return
     }
@@ -438,7 +492,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
               <button className="button button-secondary" type="button" onClick={resetAttempt}>
                 Try again
               </button>
-              {formulas.length > 1 ? (
+              {studyFormulas.length > 1 ? (
                 <button
                   className="button button-secondary"
                   type="button"
@@ -451,7 +505,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           </div>
         ) : null}
 
-        {!result && formulas.length > 1 ? (
+        {!result && studyFormulas.length > 1 ? (
           <button className="practice-next-link" type="button" onClick={() => void goToNextFormula()}>
             Skip to next review
           </button>
@@ -478,7 +532,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
         <div className="empty-state">
           <p>No useful gap could be generated for this formula yet.</p>
           <span>Missing term currently hides a variable that appears once on the right-hand side.</span>
-          {formulas.length > 1 ? (
+          {studyFormulas.length > 1 ? (
             <button
               className="button button-secondary empty-state-action"
               type="button"
@@ -588,7 +642,7 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           </div>
         ) : null}
 
-        {!result && (missingTermGaps.length > 1 || formulas.length > 1) ? (
+        {!result && (missingTermGaps.length > 1 || studyFormulas.length > 1) ? (
           <button className="practice-next-link" type="button" onClick={goToNextMissingChallenge}>
             Skip to next challenge
           </button>
@@ -627,8 +681,61 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
           <p className="step-label">Practice mode</p>
           <h2 id="practice-mode-title">{modeTitles[mode]}</h2>
         </div>
-        {formulas.length > 0 ? <span className="count-badge">{formulas.length}</span> : null}
+        {formulas.length > 0 ? (
+          <span className="count-badge">
+            {studyFormulas.length === formulas.length
+              ? formulas.length
+              : `${studyFormulas.length}/${formulas.length}`}
+          </span>
+        ) : null}
       </div>
+
+      {categories.length > 1 ? (
+        <details className="practice-category-filter">
+          <summary>
+            <span>Study categories</span>
+            <span className="practice-category-filter-summary">
+              {selectedCategories === null
+                ? 'All categories'
+                : selectedCategories.length === 0
+                  ? 'No categories'
+                  : selectedCategories.length === 1
+                    ? selectedCategories[0]
+                    : `${selectedCategories.length} categories`}
+            </span>
+          </summary>
+
+          <div className="practice-category-options" role="group" aria-label="Categories to study">
+            <button
+              type="button"
+              className={`practice-category-button${selectedCategories === null ? ' practice-category-button-active' : ''}`}
+              aria-pressed={selectedCategories === null}
+              onClick={studyAllCategories}
+            >
+              All categories
+            </button>
+            {categories.map((category) => {
+              const selected = selectedCategories?.includes(category) ?? false
+
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  className={`practice-category-button${selected ? ' practice-category-button-active' : ''}`}
+                  aria-pressed={selected}
+                  onClick={() => toggleStudyCategory(category)}
+                >
+                  {category}
+                </button>
+              )
+            })}
+          </div>
+
+          <p className="practice-category-count">
+            {studyFormulas.length} of {formulas.length} formulas included in this practice queue.
+          </p>
+        </details>
+      ) : null}
 
       {queueSummary ? (
         <div className="review-queue-summary" aria-label="FSRS review queue">
@@ -656,13 +763,25 @@ export function FullRecallPractice({ formulas, onAddFormula }: FullRecallPractic
 
       {!currentFormula ? (
         <div className="empty-state">
-          <p>No formula to practise yet.</p>
-          <span>Add your first formula, then practise it here.</span>
-          {onAddFormula ? (
-            <button className="button button-primary empty-state-action" type="button" onClick={onAddFormula}>
-              Add formula
-            </button>
-          ) : null}
+          {formulas.length === 0 ? (
+            <>
+              <p>No formula to practise yet.</p>
+              <span>Add your first formula, then practise it here.</span>
+              {onAddFormula ? (
+                <button className="button button-primary empty-state-action" type="button" onClick={onAddFormula}>
+                  Add formula
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p>No categories selected.</p>
+              <span>Select at least one category to start practising.</span>
+              <button className="button button-secondary empty-state-action" type="button" onClick={studyAllCategories}>
+                Study all categories
+              </button>
+            </>
+          )}
         </div>
       ) : mode === 'full-recall' ? (
         renderFullRecall()
