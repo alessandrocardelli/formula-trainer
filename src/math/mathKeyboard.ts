@@ -4,6 +4,7 @@ type VirtualKeyboardKeycap =
       latex?: string
       insert?: string
       command?: string
+      shift?: string
       width?: 0.5 | 1 | 1.5 | 2 | 5
       variants?: string[]
     }
@@ -36,6 +37,15 @@ const squareBracketsKey: VirtualKeyboardKeycap = {
   insert: '\\left[#?\\right]',
 }
 
+const navigationRow: VirtualKeyboardKeycap[] = ['[left]', '[up]', '[down]', '[right]']
+
+function letterKey(letter: string): VirtualKeyboardKeycap {
+  return {
+    latex: letter,
+    shift: letter.toUpperCase(),
+  }
+}
+
 const electronicsLayout: VirtualKeyboardLayout = {
   label: 'Electronics',
   tooltip: 'Common electronics formula keys',
@@ -44,6 +54,18 @@ const electronicsLayout: VirtualKeyboardLayout = {
     ['4', '5', '6', '\\times', '\\frac{#@}{#?}', '(', ')'],
     ['1', '2', '3', 'V', 'I', 'R', 'P'],
     ['0', '.', 'C', 'L', 'f', '#@_{#?}', '#@^{#?}'],
+    navigationRow,
+  ],
+}
+
+const alphabeticLayout: VirtualKeyboardLayout = {
+  label: 'Alphabetic',
+  tooltip: 'Latin letters and formula navigation',
+  rows: [
+    'qwertyuiop'.split('').map(letterKey),
+    'asdfghjkl'.split('').map(letterKey),
+    ['[shift]', ...'zxcvbnm'.split('').map(letterKey), '[backspace]'],
+    navigationRow,
   ],
 }
 
@@ -63,12 +85,13 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
       '\\mu',
     ],
     ['\\rho', '\\alpha', '\\beta', '\\eta', '\\lambda', squareBracketsKey, '[backspace]'],
+    navigationRow,
   ],
 }
 
-const customLayouts: readonly (string | VirtualKeyboardLayout)[] = [
+const customLayouts: readonly VirtualKeyboardLayout[] = [
   electronicsLayout,
-  'alphabetic',
+  alphabeticLayout,
   advancedElectronicsLayout,
 ]
 
