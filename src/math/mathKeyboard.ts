@@ -52,7 +52,7 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
       '\\varepsilon',
       '\\mu',
     ],
-    ['\\rho', '\\alpha', '\\beta', '\\lambda', '\\approx', '\\infty', '[backspace]'],
+    ['\\rho', '\\alpha', '\\beta', '\\eta', '\\lambda', '\\approx', '[backspace]'],
   ],
 }
 
