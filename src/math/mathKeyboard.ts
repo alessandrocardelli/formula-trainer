@@ -23,6 +23,7 @@ type MathVirtualKeyboard = {
 
 type EditableMathField = HTMLElement & {
   menuItems?: readonly unknown[]
+  mathVirtualKeyboardPolicy?: 'auto' | 'manual' | 'sandboxed'
 }
 
 const electronicsLayout: VirtualKeyboardLayout = {
@@ -59,24 +60,39 @@ function keyboard(): MathVirtualKeyboard | undefined {
   return (window as unknown as { mathVirtualKeyboard?: MathVirtualKeyboard }).mathVirtualKeyboard
 }
 
-function configureElectronicsKeyboard() {
-  const virtualKeyboard = keyboard()
-  if (!virtualKeyboard) {
-    return
-  }
-
+function configureElectronicsKeyboard(virtualKeyboard: MathVirtualKeyboard) {
   virtualKeyboard.layouts = [electronicsLayout, 'alphabetic', advancedElectronicsLayout]
   virtualKeyboard.editToolbar = 'none'
 }
 
-function disableMathFieldContextMenu(mathfield: HTMLElement) {
-  ;(mathfield as EditableMathField).menuItems = []
+function prepareMathField(mathfield: HTMLElement) {
+  const editableMathField = mathfield as EditableMathField
+  editableMathField.menuItems = []
+  editableMathField.mathVirtualKeyboardPolicy = 'manual'
+  mathfield.setAttribute('math-virtual-keyboard-policy', 'manual')
+}
+
+function showElectronicsKeyboard(mathfield: HTMLElement, attempt = 0) {
+  const virtualKeyboard = keyboard()
+
+  if (!virtualKeyboard) {
+    if (attempt < 4) {
+      window.requestAnimationFrame(() => showElectronicsKeyboard(mathfield, attempt + 1))
+    }
+    return
+  }
+
+  // A MathLive keyboard can already be mounted before our click handler runs.
+  // Hide it first so the shared keyboard is rebuilt from our layouts instead
+  // of keeping the default numeric/symbol/alphabetic/greek panel alive.
+  virtualKeyboard.hide()
+  configureElectronicsKeyboard(virtualKeyboard)
+  virtualKeyboard.show()
 }
 
 export function openMathKeyboard(mathfield: HTMLElement) {
-  disableMathFieldContextMenu(mathfield)
-  configureElectronicsKeyboard()
-  keyboard()?.show()
+  prepareMathField(mathfield)
+  showElectronicsKeyboard(mathfield)
 
   window.setTimeout(() => {
     mathfield.scrollIntoView({ block: 'center', behavior: 'smooth' })

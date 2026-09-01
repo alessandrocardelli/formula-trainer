@@ -14,7 +14,8 @@ body {
   --keyboard-row-padding-right: 2px;
 }
 
-math-field::part(menu-toggle) {
+math-field::part(menu-toggle),
+math-field::part(virtual-keyboard-toggle) {
   display: none;
 }
 
