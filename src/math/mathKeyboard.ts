@@ -17,13 +17,13 @@ type VirtualKeyboardLayout = {
 type MathVirtualKeyboard = {
   show: () => void
   hide: () => void
+  addEventListener: (type: string, callback: EventListenerOrEventListenerObject | null) => void
   layouts: readonly (string | VirtualKeyboardLayout)[] | string
   editToolbar?: string
 }
 
 type EditableMathField = HTMLElement & {
   menuItems?: readonly unknown[]
-  mathVirtualKeyboardPolicy?: 'auto' | 'manual' | 'sandboxed'
 }
 
 const equalsKey: VirtualKeyboardKeycap = {
@@ -66,43 +66,69 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
   ],
 }
 
+const customLayouts: readonly (string | VirtualKeyboardLayout)[] = [
+  electronicsLayout,
+  'alphabetic',
+  advancedElectronicsLayout,
+]
+
+let keyboardInitialized = false
+
 function keyboard(): MathVirtualKeyboard | undefined {
   return (window as unknown as { mathVirtualKeyboard?: MathVirtualKeyboard }).mathVirtualKeyboard
 }
 
 function configureElectronicsKeyboard(virtualKeyboard: MathVirtualKeyboard) {
-  virtualKeyboard.layouts = [electronicsLayout, 'alphabetic', advancedElectronicsLayout]
+  virtualKeyboard.layouts = customLayouts
   virtualKeyboard.editToolbar = 'none'
 }
 
 function prepareMathField(mathfield: HTMLElement) {
-  const editableMathField = mathfield as EditableMathField
-  editableMathField.menuItems = []
-  editableMathField.mathVirtualKeyboardPolicy = 'manual'
-  mathfield.setAttribute('math-virtual-keyboard-policy', 'manual')
+  ;(mathfield as EditableMathField).menuItems = []
 }
 
-function showElectronicsKeyboard(mathfield: HTMLElement, attempt = 0) {
-  const virtualKeyboard = keyboard()
+export function initializeMathKeyboard(attempt = 0) {
+  if (keyboardInitialized) {
+    return
+  }
 
+  const virtualKeyboard = keyboard()
   if (!virtualKeyboard) {
-    if (attempt < 4) {
-      window.requestAnimationFrame(() => showElectronicsKeyboard(mathfield, attempt + 1))
+    if (attempt < 8) {
+      window.requestAnimationFrame(() => initializeMathKeyboard(attempt + 1))
     }
     return
   }
 
-  // A MathLive keyboard can already be mounted before our click handler runs.
-  // Hide it first so the shared keyboard is rebuilt from our layouts instead
-  // of keeping the default numeric/symbol/alphabetic/greek panel alive.
-  virtualKeyboard.hide()
+  configureElectronicsKeyboard(virtualKeyboard)
+
+  virtualKeyboard.addEventListener('before-virtual-keyboard-toggle', (event) => {
+    const detail = (event as CustomEvent<{ visible?: boolean }>).detail
+    if (detail?.visible) {
+      configureElectronicsKeyboard(virtualKeyboard)
+    }
+  })
+
+  keyboardInitialized = true
+}
+
+function showElectronicsKeyboard(attempt = 0) {
+  const virtualKeyboard = keyboard()
+
+  if (!virtualKeyboard) {
+    if (attempt < 8) {
+      window.requestAnimationFrame(() => showElectronicsKeyboard(attempt + 1))
+    }
+    return
+  }
+
   configureElectronicsKeyboard(virtualKeyboard)
   virtualKeyboard.show()
 }
 
 export function openMathKeyboard(mathfield: HTMLElement) {
   prepareMathField(mathfield)
-  showElectronicsKeyboard(mathfield)
+  showElectronicsKeyboard()
 
   window.setTimeout(() => {
     mathfield.scrollIntoView({ block: 'center', behavior: 'smooth' })
