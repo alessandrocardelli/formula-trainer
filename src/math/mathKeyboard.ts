@@ -26,11 +26,21 @@ type EditableMathField = HTMLElement & {
   mathVirtualKeyboardPolicy?: 'auto' | 'manual' | 'sandboxed'
 }
 
+const equalsKey: VirtualKeyboardKeycap = {
+  latex: '=',
+  variants: ['\\approx', '\\neq', '<', '>', '\\le', '\\ge'],
+}
+
+const squareBracketsKey: VirtualKeyboardKeycap = {
+  latex: '[\\Box]',
+  insert: '\\left[#?\\right]',
+}
+
 const electronicsLayout: VirtualKeyboardLayout = {
   label: 'Electronics',
   tooltip: 'Common electronics formula keys',
   rows: [
-    ['7', '8', '9', '+', '-', '=', '[backspace]'],
+    ['7', '8', '9', '+', '-', equalsKey, '[backspace]'],
     ['4', '5', '6', '\\times', '\\frac{#@}{#?}', '(', ')'],
     ['1', '2', '3', 'V', 'I', 'R', 'P'],
     ['0', '.', 'C', 'L', 'f', '#@_{#?}', '#@^{#?}'],
@@ -52,7 +62,7 @@ const advancedElectronicsLayout: VirtualKeyboardLayout = {
       '\\varepsilon',
       '\\mu',
     ],
-    ['\\rho', '\\alpha', '\\beta', '\\eta', '\\lambda', '\\approx', '[backspace]'],
+    ['\\rho', '\\alpha', '\\beta', '\\eta', '\\lambda', squareBracketsKey, '[backspace]'],
   ],
 }
 
