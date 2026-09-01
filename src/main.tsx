@@ -4,6 +4,7 @@ import 'mathlive'
 import App from './App'
 import { AppMenu } from './components/AppMenu'
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt'
+import { initializeMathKeyboard } from './math/mathKeyboard'
 import './styles.css'
 import './practiceModes.css'
 import './metadataFlow.css'
@@ -11,6 +12,8 @@ import './backupControls.css'
 import './pwaUpdatePrompt.css'
 import './appMenu.css'
 import './electronicsKeyboard.css'
+
+initializeMathKeyboard()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
