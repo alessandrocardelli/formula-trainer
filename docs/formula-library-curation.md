@@ -42,7 +42,13 @@ For every new or revised formula batch:
 
 Examples of constructs that must be checked explicitly include fractions, `+`, `-`, equality/relations, round parentheses, square brackets, subscripts, superscripts, Greek symbols, square roots, exponentials, sums, integrals and derivatives. A generic statement such as “parentheses are covered” is not sufficient when the batch also contains a different delimiter family.
 
-The long-term engineering goal is to automate this coverage check so a curated library fixture or batch can fail validation when it introduces an unsupported symbol or construct.
+### Navigation invariant
+
+Formula navigation is baseline input functionality, not an optional layout feature. Every Formula Trainer math-keyboard layout must expose the four directional controls `←`, `→`, `↑` and `↓` directly. They are required to move through nested MathLive structures such as fraction numerator/denominator placeholders, subscripts, superscripts, grouped expressions and other formula slots.
+
+A keyboard revision must not leave any selectable layout without all four movement controls. If a future layout is introduced, this invariant is part of its definition of done.
+
+The long-term engineering goal is to automate both formula-symbol coverage and keyboard invariants so a curated library fixture or keyboard revision can fail validation when it introduces an unsupported symbol, construct or navigation regression.
 
 ## Current core-library audit
 
@@ -65,7 +71,8 @@ The corrected audit results are:
 - η is available in the `Advanced` layout;
 - a paired square-brackets key is available in `Advanced` and inserts `\left[...\right]` around a placeholder;
 - `≈` remains available as a long-press/variant of the equality key, so adding square brackets does not increase the seven-key mobile row width;
-- the remaining constructs used by the 44 formulas are already covered by the direct electronics keys or the alphabetic fallback.
+- all three Formula Trainer layouts expose direct left, right, up and down navigation controls;
+- the remaining constructs used by the 44 formulas are covered by the direct electronics keys or the custom alphabetic layout.
 
 ## Definition of done for a curated batch
 
